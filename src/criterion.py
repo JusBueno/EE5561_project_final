@@ -10,9 +10,17 @@ class SoftDiceLoss(nn.Module):
         return (1-soft_dice_coeff(pred, target, self.epsilon)).sum(dim = 1).mean() #Sum loss channels
     
 def soft_dice_coeff(pred, target, epsilon=1e-6):
-    intersection = (pred * target).sum(dim=(2, 3))
-    denominator = (pred ** 2).sum(dim=(2, 3)) + (target ** 2).sum(dim=(2, 3))
-    dice = (2. * intersection) / (denominator + epsilon)
+    if(pred.ndim == 4):
+        intersection = (pred * target).sum(dim=(2, 3))
+        denominator = (pred ** 2).sum(dim=(2, 3)) + (target ** 2).sum(dim=(2, 3))
+        dice = (2. * intersection) / (denominator + epsilon)
+        
+    else:
+        intersection = (pred * target).sum(dim=(-1, -2))        # (B, C, D)
+        pred_sum     = pred.sum(dim=(-1, -2))                    # (B, C, D)
+        target_sum   = target.sum(dim=(-1, -2))                  # (B, C, D)
+        dice_per_depth = (2 * intersection + epsilon) / (pred_sum + target_sum + epsilon)
+        dice = dice_per_depth.mean(dim=-1)                  # (B, C)
     
     return dice #Output size = [num_batches, num_channels]
 
