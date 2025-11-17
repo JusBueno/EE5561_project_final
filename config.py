@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 
 #Choose parameters
 class Training_Parameters:
@@ -6,10 +7,17 @@ class Training_Parameters:
         
         #Choose a network
         possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03"]
-        
-        self.net = "REF"
+        net_3D = ["REF", "MOD_01", "MOD_02", "MOD_03"]
+
+        self.net = "MOD_01"
         self.VAE_enable = True
 
+<<<<<<< HEAD
+=======
+        
+        
+  
+>>>>>>> 273bca6882022b4c348aa34bd516334f57b39060
         #Basic parameters for training
         self.num_epochs = 300      
         self.learning_rate = 1e-4
@@ -24,9 +32,19 @@ class Training_Parameters:
         self.degradation_type = 'downsampling'
         self.downsamp_type = 'bilinear'  #Type of downsampling
         self.ds_ratio = 1                #Downsampling factor (if doing downsamplin at all)
+<<<<<<< HEAD
         self.HR_layers = self.ds_ratio - 1
         
         
+=======
+        if self.net in net_3D:
+            self.downsamp_mode = "3D"
+        else:
+            self.downsamp_mode = "2D"
+
+        # Number of high resolution layers (0: no downsampling, 1: x2 downsampling, 2: x4 downsampling)
+        self.HR_layers = 0
+>>>>>>> 273bca6882022b4c348aa34bd516334f57b39060
         
         #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
         self.volume_dim = True #Use volume dimension
