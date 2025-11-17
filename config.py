@@ -9,7 +9,8 @@ class Training_Parameters:
         
         self.net = "REF"
         self.VAE_enable = True
-        self.HR_layers = 1
+
+        
         
   
         #Basic parameters for training
@@ -27,7 +28,8 @@ class Training_Parameters:
         self.downsamp_type = 'bilinear'  #Type of downsampling
         self.ds_ratio = 1                #Downsampling factor (if doing downsamplin at all)
         
-
+        # Number of high resolution layers (0: no downsampling, 1: x2 downsampling, 2: x4 downsampling)
+        self.HR_layers = 1
         
         #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
         self.volume_dim = True #Use volume dimension
