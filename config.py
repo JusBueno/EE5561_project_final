@@ -9,7 +9,7 @@ class Training_Parameters:
         possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03"]
         net_3D = ["REF", "MOD_01", "MOD_02", "MOD_03"]
 
-        self.net = "REF"
+        self.net = "MOD_01"
         self.VAE_enable = True
 
         
@@ -35,7 +35,7 @@ class Training_Parameters:
             self.downsamp_mode = "2D"
 
         # Number of high resolution layers (0: no downsampling, 1: x2 downsampling, 2: x4 downsampling)
-        self.HR_layers = int(np.log2(self.ds_ratio))
+        self.HR_layers = 0
         
         #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
         self.volume_dim = True #Use volume dimension

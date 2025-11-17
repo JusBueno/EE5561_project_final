@@ -36,7 +36,7 @@ class BRATS_dataset(Dataset):
         self.input_dim = np.array([240//self.ds_ratio,240//self.ds_ratio,self.slab_dim], dtype = np.int64)
         self.augment = params.augment
         self.binary_mask = params.binary_mask
-        self.cat_modalities = params.cat_modalities
+        #self.cat_modalities = params.cat_modalities
         self.volume_dim = params.volume_dim
         self.modality_index = params.modality_index
         
