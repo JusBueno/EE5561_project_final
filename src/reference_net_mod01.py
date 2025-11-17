@@ -167,16 +167,20 @@ class VDResampling(nn.Module):
             self.actv1 = nn.ELU(inplace=True)
             self.actv2 = nn.ELU(inplace=True)
         self.conv1 = nn.Conv3d(in_channels=inChans, out_channels=16, kernel_size=kernel_size, stride=stride, padding=padding)
+        print("DEBUG")
+        print(dense_features)
         self.dense1 = nn.Linear(in_features=16*dense_features[0]*dense_features[1]*dense_features[2], out_features=inChans)
         self.dense2 = nn.Linear(in_features=midChans, out_features=midChans*dense_features[0]*dense_features[1]*dense_features[2])
         self.up0 = LinearUpSampling(midChans,outChans)
         
     def forward(self, x):
+        
         out = self.gn1(x)
         out = self.actv1(out)
         out = self.conv1(out)
         out = out.view(-1, self.num_flat_features(out))
         out_vd = self.dense1(out)
+
         distr = out_vd 
         out = VDraw(out_vd)
         out = self.dense2(out)
@@ -263,14 +267,16 @@ class VAE(nn.Module):
 class NvNet_MOD01(nn.Module):
     def __init__(self, inChans, input_shape, seg_outChans, activation, normalizaiton, VAE_enable, mode, HR_layers = 0):
         super(NvNet_MOD01, self).__init__()
-        
+        print("DEBUG")
+        print(input_shape)
+        print(type(input_shape[0]))
         # Original input shape and forced input shape
         self.old_in_shape = (input_shape[1] // (2 ** HR_layers), input_shape[2] // (2 ** HR_layers), input_shape[3] // (2 ** HR_layers))
         self.shape_trans, self.new_in_shape = make_divisible_crop_or_pad(self.old_in_shape, 16)
         
         # some critical parameters
         self.inChans = inChans
-        self.input_shape = (input_shape[0], self.new_in_shape[0], self.new_in_shape[1], self.new_in_shape[2])
+        self.input_shape = (input_shape[0], int(self.new_in_shape[0]), int(self.new_in_shape[1]), int(self.new_in_shape[2]))
         #self.shape_inv_trans = make_crop_or_pad(self.input_shape, input_shape)
         self.shape_inv_trans = make_crop_or_pad(self.new_in_shape, (input_shape[1], input_shape[2], input_shape[3]))
         self.seg_outChans = seg_outChans
