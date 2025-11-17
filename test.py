@@ -17,7 +17,7 @@ label = "custom_vae_2d_test"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-#data_path = '../BRATS20/BraTS2020_ValidationData/MICCAI_BraTS2020_ValidationData/'
+#data_path = '../../BRATS20/BraTS2020_ValidationData/MICCAI_BraTS2020_ValidationData/'
 data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
 results_path = Path('training_results')/label
 
