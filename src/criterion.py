@@ -3,27 +3,44 @@ import torch.nn as nn
 from torch.nn.modules.loss import _Loss
 
 
-def soft_dice_coeff(pred, target, epsilon=1e-6):
-
-    intersection = (pred * target).sum(dim=(-1, -2))
-    pred_sq_sum = (pred ** 2).sum(dim=(-1, -2))
-    target_sq_sum = (target ** 2).sum(dim=(-1, -2))
-    dice = (2 * intersection) / (pred_sq_sum + target_sq_sum + epsilon)
-
-    # if 3D: [B, C, D, H, W], average along depth
-    if pred.ndim == 5:
-        dice = dice.mean(dim=-1)
+def soft_dice_coeff(pred, target, epsilon=1e-8):
+    """
+    Returns soft dice coefficient along batches and channels
+    """
+    if(pred.ndim == 4): #[B, C, H, W]
+        intersection = (pred * target).sum(dim=(2, 3))
+        pred_sq_sum = (pred ** 2).sum(dim=(2, 3))
+        target_sq_sum = (target ** 2).sum(dim=(2, 3))
+        dice = (2 * intersection + epsilon) / (pred_sq_sum + target_sq_sum + epsilon)
+        
+    elif(pred.ndim == 5): #[B, C, D, H, W]
+        intersection = (pred * target).sum(dim=(2, 3, 4))
+        pred_sq_sum = (pred ** 2).sum(dim=(2, 3, 4))
+        target_sq_sum = (target ** 2).sum(dim=(2, 3, 4))
+        dice = (2 * intersection + epsilon) / (pred_sq_sum + target_sq_sum + epsilon)
 
     return dice  # shape (B, C)
-    
+
 
 class SoftDiceLoss(_Loss):
-    
+    '''
+    Soft_Dice = 2*|dot(A, B)| / (|dot(A, A)| + |dot(B, B)| + eps)
+    eps is a small constant to avoid zero division, 
+    '''
     def __init__(self, *args, **kwargs):
         super(SoftDiceLoss, self).__init__()
 
-    def forward(self, pred, target):
-        return (1-soft_dice_coeff(pred, target)).sum(dim = 1).mean() #Sum loss channels
+    def forward(self, y_pred, y_true, eps=1e-8):
+        
+#         intersection = torch.sum(torch.mul(y_pred, y_true)) 
+#         union = torch.sum(torch.mul(y_pred, y_pred)) + torch.sum(torch.mul(y_true, y_true)) + eps
+#         dice = 2 * intersection / union 
+#         dice_loss = 1 - dice
+
+        dice_loss = 1-soft_dice_coeff(y_pred, y_true)
+    
+        return dice_loss.sum(dim=1).mean()
+    
 
 
 class CustomKLLoss(_Loss):
@@ -63,8 +80,7 @@ class CombinedLoss(_Loss):
         l2_loss = self.l2_loss(rec_y_pred, rec_y_true)
         kl_div = self.kl_loss(est_mean, est_std)
         combined_loss = dice_loss + self.k1 * l2_loss + self.k2 * kl_div
-        #print("dice_loss:%.4f, L2_loss:%.4f, KL_div:%.4f, combined_loss:%.4f"%(dice_loss,l2_loss,kl_div,combined_loss))
-        
+
         return combined_loss
     
     
@@ -84,17 +100,4 @@ class CombinedLoss(_Loss):
 #     return lossSD + w1 * lossL2 + w2 * lossKL
 
 
-# class SoftDiceLoss(_Loss):
-#     '''
-#     Soft_Dice = 2*|dot(A, B)| / (|dot(A, A)| + |dot(B, B)| + eps)
-#     eps is a small constant to avoid zero division, 
-#     '''
-#     def __init__(self, *args, **kwargs):
-#         super(SoftDiceLoss, self).__init__()
 
-#     def forward(self, y_pred, y_true, eps=1e-8):
-#         intersection = torch.sum(torch.mul(y_pred, y_true)) 
-#         union = torch.sum(torch.mul(y_pred, y_pred)) + torch.sum(torch.mul(y_true, y_true)) + eps
-#         dice = 2 * intersection / union 
-#         dice_loss = 1 - dice
-#         return dice_loss
