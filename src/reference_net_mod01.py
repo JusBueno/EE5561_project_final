@@ -271,7 +271,8 @@ class NvNet_MOD01(nn.Module):
         # some critical parameters
         self.inChans = inChans
         self.input_shape = (input_shape[0], self.new_in_shape[0], self.new_in_shape[1], self.new_in_shape[2])
-        self.shape_inv_trans = make_crop_or_pad(self.input_shape, input_shape)
+        #self.shape_inv_trans = make_crop_or_pad(self.input_shape, input_shape)
+        self.shape_inv_trans = make_crop_or_pad(self.new_in_shape, (input_shape[1], input_shape[2], input_shape[3]))
         self.seg_outChans = seg_outChans
         self.activation = activation
         self.normalizaiton = normalizaiton
@@ -460,6 +461,13 @@ def make_crop_or_pad(in_shape, out_shape):
 
 # Local Test
 if __name__ == "__main__":
+    inChans = 4
+    seg_outChans = 3
+    input_shape = (1, 144, 240, 240)
+    activation = "relu"
+    normalization = "group_normalization"
+    VAE_enable = True
+
     print("Local Test - Reference Net - MOD01")
     print("Asymmetrical Network with downsampled input")
 
