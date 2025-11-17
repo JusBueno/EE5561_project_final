@@ -9,7 +9,7 @@ class Training_Parameters:
         
         self.net = "REF"
         self.VAE_enable = True
-
+        self.HR_layers = 1
         
   
         #Basic parameters for training
