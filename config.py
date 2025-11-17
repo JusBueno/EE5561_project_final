@@ -9,6 +9,7 @@ class Training_Parameters:
         
         self.net = "REF"
         self.VAE_enable = True
+
         
   
         #Basic parameters for training
@@ -28,7 +29,9 @@ class Training_Parameters:
         
 
         
-        #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)                
+        #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
+        self.volume_dim = True #Use volume dimension
+        self.slab_dim = 144
         self.slabs_per_volume = 1
         self.num_volumes = 369  #Maximum = 369 for the training dataset
         self.data_shape = [240,240,155]
@@ -36,11 +39,7 @@ class Training_Parameters:
         self.augment = True     #Perform data augmentation or not
         self.binary_mask = False 
         
-        
-        #Network dependent parameters
-        if self.net == "REF":
-            self.volume_dim = True
-            self.slab_dim = 144
+
         
         
         if self.net not in possible_nets:
