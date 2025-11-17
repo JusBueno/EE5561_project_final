@@ -8,6 +8,9 @@ from src.network import *
 from src.criterion import *
 from src.testing_functions import *
 from src.reference_net import *
+from src.reference_net_mod01 import NvNet_MOD01
+from src.reference_net_mod02 import NvNet_MOD02
+from src.reference_net_mod03 import NvNet_MOD03
 from config import Training_Parameters
 
 
