@@ -1,18 +1,21 @@
 import sys
+import pickle
+from pathlib import Path
 from tqdm import tqdm
+from torch.optim.lr_scheduler import LambdaLR
 from src.data_preparation import *
 from src.network import *
 from src.criterion import *
 from src.testing_functions import *
 from src.reference_net import *
-from torch.optim.lr_scheduler import LambdaLR
-from pathlib import Path
-import pickle
+from config import Training_Parameters
+
 
 #=========== SETUP PARAMETERS ===============
 
-label = "ref_network_test_2" #This is the name of the results folder
-       
+#Get command line arguments
+label = sys.argv[1]
+
 params = Training_Parameters() #Initialize training parameters, you can change them in src/data_preparation.py
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -50,15 +53,17 @@ val_loader = DataLoader(val_dataset, batch_size=1)
 
 #With VAE branch
 if params.net == "VAE_2D":
-    model = VAE_UNET(params.num_slices, input_dim=dataset.input_dim, HR_dim=dataset.output_dim)
-    criterion = combined_loss
+    model = VAE_UNET(params.slab_dim, input_dim=dataset.input_dim, HR_dim=dataset.output_dim)
 elif params.net == "UNET_2D":
-    model = UNET(params.num_slices)
-    criterion = dice_loss
+    model = UNET(params.slab_dim)
 elif params.net == "ref_3D":
-    model = NvNet(inChans, input_shape, seg_outChans, activation, normalization, VAE_enable, mode='trilinear')
-    criterion = CombinedLoss_ref()
-    
+    inChans = 4; seg_outChans = 3
+    input_shape = (inChans,params.slab_dim, 240, 240)
+    model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear')
+
+
+criterion = CombinedLoss(VAE_enable = params.VAE_enable)
+
 model = model.to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr = params.learning_rate, weight_decay = 1e-5)
@@ -73,16 +78,17 @@ print("Starting training "+ label)
 best_val_dice = 0
 best_epoch = True
 
+
 for epoch in range(params.num_epochs):
-    
+
     model.train()
     train_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{params.num_epochs} [Training]")
 
     for out_imgs, inp_imgs, mask in train_bar:
-        
+
         optimizer.zero_grad()
         if params.net == "VAE_2D":
-            central_index = params.num_slices//2
+            central_index = params.slab_dim//2
             central_slice = out_imgs[:,central_index,:,:].unsqueeze(1) #Get central slice for VAE output
             seg_out, vae_out, mu, logvar = model(inp_imgs)
             loss = criterion(seg_out, mask, vae_out, central_slice, mu, logvar)
@@ -92,21 +98,21 @@ for epoch in range(params.num_epochs):
         elif params.net == "ref_3D":
             seg_y_pred, rec_y_pred, y_mid = model(inp_imgs)
             loss = criterion(seg_y_pred, mask, rec_y_pred, out_imgs, y_mid)
-        
+
         loss.backward()
         optimizer.step()
-        
+
         train_bar.set_postfix(loss=loss.item())
-    
-    
+
+
     #---Validation    
     if(params.validation):
-        validation_metrics[epoch,:] = test_model(model, val_loader, params.net)
+        validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable)
         np.save(results_path / "training_metrics.npy", validation_metrics)
         dice = validation_metrics[epoch,0]
         best_epoch = dice > best_val_dice
         if(best_epoch): best_val_dice = dice
-    
+
      #---Logging 
     if(best_epoch and params.save_model_each_epoch):
         checkpoint = {
@@ -116,10 +122,10 @@ for epoch in range(params.num_epochs):
         'scheduler_state_dict': scheduler.state_dict()
         }
         torch.save(checkpoint, results_path / "checkpoint.pth.tar")
-        
-        plot_examples(model, val_dataset, [0,1,2], results_path, params.net)
 
-  
+        plot_examples(model, val_dataset, range(1), results_path, params.net, VAE_enable = params.VAE_enable)
+
+
     scheduler.step() #Adjust learning rate
     
     
