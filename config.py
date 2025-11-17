@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 
 #Choose parameters
 class Training_Parameters:
@@ -7,7 +8,7 @@ class Training_Parameters:
         #Choose a network
         possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03"]
         
-        self.net = "REF"
+        self.net = "MOD_01"
         self.VAE_enable = True
 
         #Basic parameters for training
@@ -23,8 +24,8 @@ class Training_Parameters:
         #Choose which type of downsampling/degradation
         self.degradation_type = 'downsampling'
         self.downsamp_type = 'bilinear'  #Type of downsampling
-        self.ds_ratio = 1                #Downsampling factor (if doing downsamplin at all)
-        self.HR_layers = self.ds_ratio - 1
+        self.ds_ratio = 2                #Downsampling factor (if doing downsamplin at all)
+        self.HR_layers = np.log2(self.ds_ratio)
         
         
         
