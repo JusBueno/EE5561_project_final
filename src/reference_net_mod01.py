@@ -357,7 +357,7 @@ class NvNet_MOD01(nn.Module):
             out_final = torch.cat((out_end, out_vae), 1)
             return out_end, out_vae, out_distr
         
-        return out_end
+        return out_end, 0, 0
     
 
     
