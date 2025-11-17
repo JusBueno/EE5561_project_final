@@ -19,19 +19,28 @@ from config import Training_Parameters
 #Get command line arguments
 label = sys.argv[1]
 
-params = Training_Parameters() #Initialize training parameters, you can change them in src/data_preparation.py
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
-
 #Directory for output results
 results_path = Path('training_results')/label
+resume_training = results_path.is_dir()
 results_path.mkdir(parents=True, exist_ok=True)
 
-#Save the parameters to keep track of what we ran
-with open(results_path /'params.pkl', 'wb') as f:
-    pickle.dump(params, f)
 
+if resume_training: #Load existing params
+    with open(results_path/'params.pkl', 'rb') as f:
+        params = pickle.load(f)
+    checkpoint = torch.load(results_path/"checkpoint.pth.tar") 
+    validation_metrics = np.load(results_path / "training_metrics.npy")
+    best_val_dice = validation_metrics.max(axis=0)[0]
+else:
+    params = Training_Parameters() #Initialize training parameters
+    #Save the parameters to keep track of what we ran
+    with open(results_path /'params.pkl', 'wb') as f:
+        pickle.dump(params, f)
+    best_val_dice = 0
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
 validation_metrics = np.zeros((params.num_epochs,3))
 
 #=========== SETUP DATASETS AND DATA LOADERS ===============
@@ -70,25 +79,34 @@ elif params.net == "MOD_02":
     model = NvNet_MOD02(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
 elif params.net == "MOD_03":
     model = NvNet_MOD03(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
-    
 
+    
+model = model.to(device)
 criterion = CombinedLoss(VAE_enable = params.VAE_enable)
 
-model = model.to(device)
-
 optimizer = torch.optim.Adam(model.parameters(), lr = params.learning_rate, weight_decay = 1e-5)
-
-# LR Scheduler
 lr_lambda = lambda epoch: (1 - epoch / params.num_epochs) ** 0.9
 scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
 
-#=========== TRAINING LOOP ===============
-print(f"Starting training {label}, net type is {params.net}, VAE enabled is {params.VAE_enable}" )
 
-best_val_dice = 0
+
+if resume_training: #Load existing params
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+    epoch = checkpoint['epoch']+1
+    print(f"RESUMING TRAINING {label}, net type is {params.net}, VAE enabled is {params.VAE_enable}" )
+else:
+    epoch = 0
+    print(f"STARTING TRAINING {label}, net type is {params.net}, VAE enabled is {params.VAE_enable}" )
+
+
+#=========== TRAINING LOOP ===============
+
+
 best_epoch = True
 
-for epoch in range(params.num_epochs):
+while epoch < params.num_epochs:
 
     model.train()
     train_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{params.num_epochs} [Training]")
@@ -125,6 +143,7 @@ for epoch in range(params.num_epochs):
      #---Logging 
     if(best_epoch and params.save_model_each_epoch):
         checkpoint = {
+        'best_dice': best_val_dice,
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
@@ -134,7 +153,7 @@ for epoch in range(params.num_epochs):
         
         plot_examples(model, val_dataset, range(10), results_path, params.net, VAE_enable = params.VAE_enable)
 
-
+    epoch += 1
     scheduler.step() #Adjust learning rate
     
     
