@@ -5,9 +5,9 @@ class Training_Parameters:
     def __init__(self):
         
         #Choose a network
-        possible_nets = ["ref_3D", "custom_asymm", "custom_symm"]
+        possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03"]
         
-        self.net = "ref_3D"
+        self.net = "REF"
         self.VAE_enable = True
         
   
@@ -38,7 +38,7 @@ class Training_Parameters:
         
         
         #Network dependent parameters
-        if self.net == "ref_3D":
+        if self.net == "REF":
             self.volume_dim = True
             self.slab_dim = 144
         
