@@ -15,7 +15,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Training_Parameters:
     def __init__(self):
         
-        #Choose network type VAE_2D, UNET_2D or ref_3D
+        #Choose network type VAE_2D, UNET_2D, ref_3D, ref_3D_MOD01, ref_3D_MOD02, or ref_3D_MOD03
         #If using a 2D version, volume_dim should be False
         #If using a 3D version, volume_dim should be True. 
         #For 3D version, use num_slices >= 16 and a power of 2
