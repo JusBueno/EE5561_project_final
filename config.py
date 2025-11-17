@@ -10,11 +10,9 @@ class Training_Parameters:
         self.net = "REF"
         self.VAE_enable = True
 
-        
-  
         #Basic parameters for training
         self.num_epochs = 300      
-        self.learning_rate = 1e-5
+        self.learning_rate = 1e-4
         self.batch_size = 1
         self.train_ratio = 0.8              #What ratio of dataset for training (Training ratio = 1 - validation ratio)
         self.validation = True              #Whether you want validation each epoch
@@ -26,8 +24,9 @@ class Training_Parameters:
         self.degradation_type = 'downsampling'
         self.downsamp_type = 'bilinear'  #Type of downsampling
         self.ds_ratio = 1                #Downsampling factor (if doing downsamplin at all)
+        self.HR_layers = self.ds_ratio - 1
         
-
+        
         
         #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
         self.volume_dim = True #Use volume dimension
@@ -38,8 +37,6 @@ class Training_Parameters:
         self.modality_index = 0 #If single modality, which one to choose
         self.augment = True     #Perform data augmentation or not
         self.binary_mask = False 
-        
-
         
         
         if self.net not in possible_nets:

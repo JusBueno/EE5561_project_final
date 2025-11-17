@@ -8,6 +8,9 @@ from src.network import *
 from src.criterion import *
 from src.testing_functions import *
 from src.reference_net import *
+from src.reference_net_mod01 import *
+from src.reference_net_mod02 import *
+from src.reference_net_mod03 import *
 from config import Training_Parameters
 
 
@@ -52,7 +55,7 @@ val_loader = DataLoader(val_dataset, batch_size=1)
 #=========== SETUP MODEL AND OPTIMIZER ===============
 
 inChans = 4; seg_outChans = 3
-input_shape = (inChans,params.slab_dim, 240, 240)
+input_shape = (inChans, params.slab_dim//params.ds_ratio, 240//params.ds_ratio, 240//params.ds_ratio)
 
 #With VAE branch
 if params.net == "VAE_2D":
@@ -80,11 +83,10 @@ lr_lambda = lambda epoch: (1 - epoch / params.num_epochs) ** 0.9
 scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
 
 #=========== TRAINING LOOP ===============
-print("Starting training "+ label)
+print(f"Starting training {label}, net type is {params.net}, VAE enabled is {params.VAE_enable}" )
 
 best_val_dice = 0
 best_epoch = True
-
 
 for epoch in range(params.num_epochs):
 
@@ -102,9 +104,9 @@ for epoch in range(params.num_epochs):
         elif params.net == "UNET_2D":
             seg_out = model(inp_imgs)
             loss = criterion(seg_out, mask)
-        elif params.net == "ref_3D":
-            seg_y_pred, rec_y_pred, y_mid = model(inp_imgs)
-            loss = criterion(seg_y_pred, mask, rec_y_pred, out_imgs, y_mid)
+        elif params.net in ["REF", "MOD_01", "MOD_02", "MOD_03"]:
+            seg_pred, rec_pred, y_mid = model(inp_imgs)
+            loss = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
 
         loss.backward()
         optimizer.step()
@@ -129,8 +131,8 @@ for epoch in range(params.num_epochs):
         'scheduler_state_dict': scheduler.state_dict()
         }
         torch.save(checkpoint, results_path / "checkpoint.pth.tar")
-
-        plot_examples(model, val_dataset, range(1), results_path, params.net, VAE_enable = params.VAE_enable)
+        
+        plot_examples(model, val_dataset, range(10), results_path, params.net, VAE_enable = params.VAE_enable)
 
 
     scheduler.step() #Adjust learning rate

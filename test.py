@@ -10,10 +10,11 @@ from src.reference_net import *
 from torch.optim.lr_scheduler import LambdaLR
 from pathlib import Path
 import pickle
+from config import Training_Parameters
 
 #=========== SETUP PARAMETERS ===============
 
-label = "custom_vae_2d_test"
+label = "ref_net_2"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -27,7 +28,10 @@ checkpoint = torch.load(checkpoint_path)
 with open(results_path/'params.pkl', 'rb') as f:
     params = pickle.load(f)
 
-
+params.slab_dim = params.num_slices
+params.slabs_per_volume = params.slices_per_volume
+params.VAE_enable = True
+    
 #=========== SETUP DATASETS AND DATA LOADERS ===============
 
 dataset = BRATS_dataset(data_path, device, params)
@@ -47,12 +51,16 @@ val_loader = DataLoader(val_dataset, batch_size=1)
 
 #=========== SETUP MODEL ===============
 
+inChans = 4; seg_outChans = 3
+input_shape = (inChans,params.slab_dim, 240, 240)
+
+#With VAE branch
 if params.net == "VAE_2D":
-    model = VAE_UNET(params.num_slices, input_dim=dataset.input_dim, HR_dim=dataset.output_dim)
+    model = VAE_UNET(params.slab_dim, input_dim=dataset.input_dim, HR_dim=dataset.output_dim)
 elif params.net == "UNET_2D":
-    model = UNET(params.num_slices)
+    model = UNET(params.slab_dim)
 elif params.net == "ref_3D":
-    model = NvNet(inChans, input_shape, seg_outChans, activation, normalization, VAE_enable, mode='trilinear')
+    model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear')
 
 
 model.load_state_dict(checkpoint['model_state_dict'])

@@ -12,7 +12,6 @@ import os
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-
 #Define dataset for the training
 class BRATS_dataset(Dataset):
     """
@@ -32,11 +31,10 @@ class BRATS_dataset(Dataset):
         self.ds_ratio = params.ds_ratio
         self.data_shape = params.data_shape
         self.downsamp_type = params.downsamp_type
-        self.output_dim = np.array([240,240,self.slab_dim], dtype = np.int64)
-        self.input_dim = np.array([240//self.ds_ratio,240//self.ds_ratio,self.slab_dim], dtype = np.int64)
+        self.output_dim = [self.slab_dim,240,240]
+        self.input_dim = [self.slab_dim//self.ds_ratio,240//self.ds_ratio,240//self.ds_ratio]
         self.augment = params.augment
         self.binary_mask = params.binary_mask
-        self.cat_modalities = params.cat_modalities
         self.volume_dim = params.volume_dim
         self.modality_index = params.modality_index
         
@@ -88,9 +86,9 @@ class BRATS_dataset(Dataset):
         #Downsize in each channel
         ds = 1/float(self.ds_ratio)
         if self.downsamp_type == 'bicubic':
-            downscaled_image = ndimage.zoom(img, (1, ds, ds), order=3)
+            downscaled_image = ndimage.zoom(img, (ds, ds, ds), order=3)
         if self.downsamp_type == 'bilinear':
-            downscaled_image = ndimage.zoom(img, (1, ds, ds), order=1)
+            downscaled_image = ndimage.zoom(img, (ds, ds, ds), order=1)
 
         return downscaled_image
 
@@ -140,7 +138,8 @@ class BRATS_dataset(Dataset):
                                        
         #Downsample each image (if needed)
         inp_img_list = [self.downsize(img) for img in img_list]
-        class_list = [1,2,4]
+        
+        class_list = [1,2,4] #Specific to our dataset, classes skip 3 for some reason
         
         #If binary mask, we only have one channel
         if self.binary_mask:
@@ -164,10 +163,11 @@ class BRATS_dataset(Dataset):
          
         
         if self.volume_dim:
-            vol_out_img = torch.zeros((4, self.slab_dim, self.output_dim[0], self.output_dim[1]), device = device)
-            vol_inp_img = torch.zeros((4, self.slab_dim, self.input_dim[0], self.input_dim[1]), device = device)
+            vol_out_img = torch.zeros((4, self.output_dim[0], self.output_dim[1], self.output_dim[2]), device = device)
+            vol_inp_img = torch.zeros((4, self.input_dim[0], self.input_dim[1], self.input_dim[2]), device = device)
             
             for i in range(4):
+
                 vol_out_img[i, :, :, :] = out_img_list[i]
                 vol_inp_img[i, :, :, :] = inp_img_list[i]
                 
