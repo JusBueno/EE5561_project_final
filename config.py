@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument("--downsamp_type", type=str, default="bilinear",
                         help="Downsampling type (default: bilinear)")
 
-    parser.add_argument("--ds_ratio", type=float, default=1,
+    parser.add_argument("--ds_ratio", type=int, default=1,
                         help="Downsampling ratio (default: 1)")
 
     return parser.parse_args()
