@@ -61,7 +61,7 @@ class CombinedLoss(_Loss):
     As default: k1=0.1, k2=0.1
     Accepts either 5 inputs (if using VAE) or 2 (if not using VAE)
     '''
-    def __init__(self, k1=0.1, k2=0.1,VAE_enable=True):
+    def __init__(self, k1=0.1, k2=0.1,VAE_enable=True, separate = False):
         super(CombinedLoss, self).__init__()
         self.k1 = k1
         self.k2 = k2
@@ -69,17 +69,21 @@ class CombinedLoss(_Loss):
         self.l2_loss = nn.MSELoss()
         self.kl_loss = CustomKLLoss()
         self.VAE_enable = VAE_enable
+        self.separate = separate
 
 
     def forward(self, seg_y_pred, seg_y_true, rec_y_pred = None, rec_y_true = None, y_mid = None,):
         dice_loss = self.dice_loss(seg_y_pred, seg_y_true)
         if(not self.VAE_enable):
-            return dice_loss
+            return dice_loss, dice_loss, 0, 0
         
         est_mean, est_std = (y_mid[:, :128], y_mid[:, 128:])
         l2_loss = self.l2_loss(rec_y_pred, rec_y_true)
         kl_div = self.kl_loss(est_mean, est_std)
         combined_loss = dice_loss + self.k1 * l2_loss + self.k2 * kl_div
+        
+        if(self.separate):
+            return combined_loss, dice_loss, l2_loss, kl_div 
 
         return combined_loss
     

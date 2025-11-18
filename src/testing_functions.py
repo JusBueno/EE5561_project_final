@@ -111,7 +111,7 @@ def plot_examples(model, test_dataset, slices, save_path, net_type, VAE_enable =
                 ax[2].imshow(mask.cpu().permute(1,2,0))
                 ax[2].set_title("HR true mask", fontsize = fs)
                 ax[3].imshow(seg_out.cpu().permute(1,2,0))
-                ax[3].set_title(f"Pred mask | Dice = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
+                ax[3].set_title(f"Pred mask \n Dice = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
 
 
 

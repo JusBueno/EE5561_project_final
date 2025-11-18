@@ -28,11 +28,12 @@ results_path.mkdir(parents=True, exist_ok=True)
 if resume_training: #Load existing params
     with open(results_path/'params.pkl', 'rb') as f:
         params = pickle.load(f)
-    checkpoint = torch.load(results_path/"checkpoint.pth.tar") 
+    checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
     validation_metrics = np.load(results_path / "training_metrics.npy")
     best_val_dice = validation_metrics.max(axis=0)[0]
 else:
     params = Training_Parameters() #Initialize training parameters
+    params.batch_size *= torch.cuda.device_count() # If parallel training
     #Save the parameters to keep track of what we ran
     with open(results_path /'params.pkl', 'wb') as f:
         pickle.dump(params, f)
@@ -42,6 +43,7 @@ else:
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
 validation_metrics = np.zeros((params.num_epochs,3))
+training_metrics = np.zeros((params.num_epochs,3))
 
 #=========== SETUP DATASETS AND DATA LOADERS ===============
 
@@ -80,9 +82,13 @@ elif params.net == "MOD_02":
 elif params.net == "MOD_03":
     model = NvNet_MOD03(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
 
-    
 model = model.to(device)
-criterion = CombinedLoss(VAE_enable = params.VAE_enable)
+
+if torch.cuda.device_count() >= 2:
+    model = nn.DataParallel(model)  
+    print(f"Parallel training with {torch.cuda.device_count()} GPUs")
+
+criterion = CombinedLoss(VAE_enable = params.VAE_enable, separate = True)
 
 optimizer = torch.optim.Adam(model.parameters(), lr = params.learning_rate, weight_decay = 1e-5)
 lr_lambda = lambda epoch: (1 - epoch / params.num_epochs) ** 0.9
@@ -118,38 +124,47 @@ while epoch < params.num_epochs:
             central_index = params.slab_dim//2
             central_slice = out_imgs[:,central_index,:,:].unsqueeze(1) #Get central slice for VAE output
             seg_out, vae_out, mu, logvar = model(inp_imgs)
-            loss = criterion(seg_out, mask, vae_out, central_slice, mu, logvar)
+            combined_loss = criterion(seg_out, mask, vae_out, central_slice, mu, logvar)
         elif params.net == "UNET_2D":
             seg_out = model(inp_imgs)
-            loss = criterion(seg_out, mask)
+            combined_loss = criterion(seg_out, mask)
         elif params.net in ["REF", "MOD_01", "MOD_02", "MOD_03"]:
             seg_pred, rec_pred, y_mid = model(inp_imgs)
-            loss = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
+            combined_loss, dice_loss, l2_loss, kl_div = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
+            training_metrics[epoch,0] += dice_loss
+            training_metrics[epoch,1] += l2_loss
+            training_metrics[epoch,2] += kl_div
 
-        loss.backward()
+        combined_loss.backward()
         optimizer.step()
 
-        train_bar.set_postfix(loss=loss.item())
-
+        train_bar.set_postfix(loss=combined_loss.item())
+    
+    training_metrics[epoch,:] = training_metrics[epoch,:] / len(train_bar)
+    np.save(results_path / "training_metrics.npy", training_metrics)
 
     #---Validation    
     if(params.validation):
         validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable)
-        np.save(results_path / "training_metrics.npy", validation_metrics)
+        np.save(results_path / "validation_metrics.npy", validation_metrics)
         dice = validation_metrics[epoch,0]
         best_epoch = dice > best_val_dice
         if(best_epoch): best_val_dice = dice
-
-     #---Logging 
-    if(best_epoch and params.save_model_each_epoch):
-        checkpoint = {
+            
+    checkpoint = {
         'best_dice': best_val_dice,
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'scheduler_state_dict': scheduler.state_dict()
         }
+
+     #---Logging model checkpoint 
+    if(params.save_model_each_epoch):
         torch.save(checkpoint, results_path / "checkpoint.pth.tar")
+        
+    if(best_epoch and params.save_model_each_epoch):
+        torch.save(checkpoint, results_path / "best_checkpoint.pth.tar")
         
         plot_examples(model, val_dataset, range(10), results_path, params.net, VAE_enable = params.VAE_enable)
 
