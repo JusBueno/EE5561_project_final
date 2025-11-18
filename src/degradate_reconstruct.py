@@ -25,11 +25,11 @@ def transform_downsample_reconstruct(img, percentage):
     rows, cols = img.shape
     img_fourier_down, mask = transform_downsample(img, percentage)
 
-    # reverse the shift for compatilibility with transform
+    # Reverse the shift for compatilibility with transform
     img_fourier_down = np.fft.ifftshift(img_fourier_down)
     mask = np.fft.ifftshift(mask)
 
-    # tranform, matrix form
+    # Tranform, matrix form
     F = np.fft.fft(np.eye(rows),norm='ortho')
 
     # Minimization problem (inspired from the cvxpy image inpainting tv problem example)
