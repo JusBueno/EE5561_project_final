@@ -11,28 +11,38 @@ from src.reference_net import *
 from src.reference_net_mod01 import NvNet_MOD01
 from src.reference_net_mod02 import NvNet_MOD02
 from src.reference_net_mod03 import NvNet_MOD03
-from config import Training_Parameters
+from config import Training_Parameters, parse_args
 
 
 #=========== SETUP PARAMETERS ===============
 
-#Get command line arguments
-label = sys.argv[1]
+args = parse_args()
+label = args.folder
 
 #Directory for output results
-results_path = Path('training_results')/label
+results_path = Path('training_results')/args.folder
 resume_training = results_path.is_dir()
 results_path.mkdir(parents=True, exist_ok=True)
 
 
-if resume_training: #Load existing params
+if resume_training and args.resume: #Load existing params
     with open(results_path/'params.pkl', 'rb') as f:
         params = pickle.load(f)
     checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
     validation_metrics = np.load(results_path / "training_metrics.npy")
     best_val_dice = validation_metrics.max(axis=0)[0]
 else:
-    params = Training_Parameters() #Initialize training parameters
+    #Initialize training parameters
+    params = Training_Parameters(
+        net=args.net,
+        VAE_enable=args.VAE_enable,
+        num_epochs=args.num_epochs,
+        LR=args.LR,
+        batch=args.batch,
+        degradation_type=args.degradation_type,
+        downsamp_type=args.downsamp_type,
+        ds_ratio=args.ds_ratio
+    )
     params.batch_size *= torch.cuda.device_count() # If parallel training
     #Save the parameters to keep track of what we ran
     with open(results_path /'params.pkl', 'wb') as f:
@@ -171,5 +181,4 @@ while epoch < params.num_epochs:
 
     epoch += 1
     scheduler.step() #Adjust learning rate
-    
     
