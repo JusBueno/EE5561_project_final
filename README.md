@@ -9,15 +9,15 @@ To run create a conda environment, install requirements.txt, and install pytorch
 # Running a training session
 To run a training session, the script accepts one required argument and several optional arguments. The required argument specifies the folder where all output from the training session will be stored. This includes logs, checkpoints, configuration files, and any generated results. If the folder does not exist, it will be created automatically.
 
-The general command format is:
+**The general command format is:**
 
 python train.py <folder> [optional arguments]
 
-Required positional argument:
+**Required positional argument:**
 
 folder : Name or path of the folder where the training session will be saved.
 
-Optional arguments:
+**Optional arguments:**
 
 --resume : Whether to resume training if a previous checkpoint is found in the folder. Default is True.
 
