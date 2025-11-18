@@ -17,7 +17,7 @@ python train.py <folder> [optional arguments]
 
 folder : Name or path of the folder where the training session will be saved.
 
-Optional arguments:
+**Optional arguments:**
 
 --resume : Whether to resume training if a previous checkpoint is found in the folder. Default is True.
 
