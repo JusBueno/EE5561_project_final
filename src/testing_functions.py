@@ -85,7 +85,7 @@ def plot_examples(model, test_dataset, slices, save_path, net_type, VAE_enable =
             if(VAE_enable):
 
                 mse_loss = MSE_loss(rec_pred, out_img)
-                vae_out_2d = rec_pred[0,0,idx,:,:].squeeze()
+                vae_out_2d = rec_pred[0,0,rec_pred.shape[2]//2,:,:].squeeze()
 
                 fig, ax = plt.subplots(1,5,figsize = (17,5))
                 plt.gray()
