@@ -65,6 +65,7 @@ val_loader = DataLoader(val_dataset, batch_size=1)
 
 inChans = 4; seg_outChans = 3
 input_shape = (inChans, params.slab_dim//params.ds_ratio, 240//params.ds_ratio, 240//params.ds_ratio)
+output_shape = (inChans, params.slab_dim, 240, 240) # Reference input (not downsized or degraded)
 
 #With VAE branch
 if params.net == "VAE_2D":
@@ -74,11 +75,11 @@ elif params.net == "UNET_2D":
 elif params.net == "REF":
     model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear')
 elif params.net == "MOD_01":
-    model = NvNet_MOD01(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
+    model = NvNet_MOD01(inChans, output_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
 elif params.net == "MOD_02":
-    model = NvNet_MOD02(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
+    model = NvNet_MOD02(inChans, output_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
 elif params.net == "MOD_03":
-    model = NvNet_MOD03(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
+    model = NvNet_MOD03(inChans, output_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
 
     
 model = model.to(device)
