@@ -9,15 +9,19 @@ def parse_args():
     parser.add_argument("folder", type=str,
                         help="Folder path to save trainining session")
 
-    # --- Optional arguments (matching your class defaults) ---
-    parser.add_argument("--resume", type=bool, default=True,
-                        help="Resume training if existing(default: True)")
+
+    parser.set_defaults(resume=True)
+    parser.add_argument("--start_new", action="store_false", dest="resume", 
+                        help="Disable resuming training")
+    parser.add_argument("--resume", action="store_true", 
+                        help="Enable resuming training (default: True)")
     
     parser.add_argument("--net", type=str, default="REF",
                         help="Network type (default: REF)")
 
-    parser.add_argument("--VAE_enable", type=bool, default=True,
-                        help="Enable VAE (default: True)")
+    parser.add_argument("--VAE_enable", action="store_true")
+    parser.add_argument("--VAE_disable", action="store_false", dest="VAE_enable")
+    parser.set_defaults(VAE_enable=True)
 
     parser.add_argument("--num_epochs", type=int, default=300,
                         help="Number of epochs (default: 300)")
