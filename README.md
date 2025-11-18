@@ -19,11 +19,11 @@ folder : Name or path of the folder where the training session will be saved.
 
 **Optional arguments:**
 
---resume : Whether to resume training if a previous checkpoint is found in the folder. Default is True.
+--resume or --start_new : Whether to resume training from existing checkpoint. Default is --resume
 
 --net : Network type to use. Default is "REF".
 
---VAE_enable : Enable or disable the VAE module. Default is True.
+--VAE_enable or --VAE_disable : Whether to use the VAE. Default it --VAE_enable 
 
 --num_epochs : Number of epochs to train. Default is 300.
 
