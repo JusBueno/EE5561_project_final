@@ -75,12 +75,11 @@ def plot_examples(model, test_dataset, slices, save_path, net_type, VAE_enable =
             seg_out = torch.round(seg_out)
             dice_coeff = soft_dice_coeff(seg_out, mask).squeeze()
             
-            idx = seg_out.shape[2]//2
             
-            seg_out = seg_out[0,:,idx,:,:].squeeze()
-            mask = mask[0,:,idx,:,:].squeeze()
-            HR_image = out_img[0,0,idx,:,:].squeeze()
-            degrad_image = inp_img[0,0,idx,:,:].squeeze()
+            seg_out = seg_out[0,:,seg_out.shape[2]//2,:,:].squeeze()
+            mask = mask[0,:,mask.shape[2]//2,:,:].squeeze()
+            HR_image = out_img[0,0,out_img.shape[2]//2,:,:].squeeze()
+            degrad_image = inp_img[0,0,inp_img.shape[2]//2,:,:].squeeze()
             
   
             if(VAE_enable):
@@ -112,7 +111,6 @@ def plot_examples(model, test_dataset, slices, save_path, net_type, VAE_enable =
                 ax[2].set_title("HR true mask", fontsize = fs)
                 ax[3].imshow(seg_out.cpu().permute(1,2,0))
                 ax[3].set_title(f"Pred mask \n Dice = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
-
 
 
             for ax in fig.get_axes():
