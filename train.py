@@ -21,11 +21,11 @@ label = args.folder
 
 #Directory for output results
 results_path = Path('training_results')/args.folder
-resume_training = results_path.is_dir()
+resume_training = (results_path/"checkpoint.pth.tar").is_file() and args.resume
 results_path.mkdir(parents=True, exist_ok=True)
 
 
-if resume_training and args.resume: #Load existing params
+if resume_training: #Load existing params
     with open(results_path/'params.pkl', 'rb') as f:
         params = pickle.load(f)
     checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
@@ -176,7 +176,6 @@ while epoch < params.num_epochs:
         
     if(best_epoch and params.save_model_each_epoch):
         torch.save(checkpoint, results_path / "best_checkpoint.pth.tar")
-        
         plot_examples(model, val_dataset, range(10), results_path, params.net, VAE_enable = params.VAE_enable)
 
     epoch += 1
