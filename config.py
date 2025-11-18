@@ -1,5 +1,43 @@
 import sys
 import numpy as np
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Training Parameters")
+
+    # --- Required positional argument ---
+    parser.add_argument("folder", type=str,
+                        help="Folder path to save trainining session")
+
+    # --- Optional arguments (matching your class defaults) ---
+    parser.add_argument("--resume", type=bool, default=True,
+                        help="Resume training if existing(default: True)")
+    
+    parser.add_argument("--net", type=str, default="REF",
+                        help="Network type (default: REF)")
+
+    parser.add_argument("--VAE_enable", type=bool, default=True,
+                        help="Enable VAE (default: True)")
+
+    parser.add_argument("--num_epochs", type=int, default=300,
+                        help="Number of epochs (default: 300)")
+
+    parser.add_argument("--LR", type=float, default=1e-4,
+                        help="Learning rate (default: 1e-4)")
+
+    parser.add_argument("--batch", type=int, default=1,
+                        help="Batch size (default: 1)")
+
+    parser.add_argument("--degradation_type", type=str, default="downsampling",
+                        help="Degradation type (default: downsampling)")
+
+    parser.add_argument("--downsamp_type", type=str, default="bilinear",
+                        help="Downsampling type (default: bilinear)")
+
+    parser.add_argument("--ds_ratio", type=float, default=1,
+                        help="Downsampling ratio (default: 1)")
+
+    return parser.parse_args()
 
 #Choose parameters
 class Training_Parameters:
