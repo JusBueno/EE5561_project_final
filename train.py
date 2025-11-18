@@ -12,7 +12,7 @@ from src.reference_net_mod01 import NvNet_MOD01
 from src.reference_net_mod02 import NvNet_MOD02
 from src.reference_net_mod03 import NvNet_MOD03
 from config import Training_Parameters
-
+import argparse
 
 #=========== SETUP PARAMETERS ===============
 
@@ -173,3 +173,36 @@ while epoch < params.num_epochs:
     scheduler.step() #Adjust learning rate
     
     
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train NvNet model")
+
+    # --- Required positional argument ---
+    parser.add_argument("folder", type=str,
+                        help="Folder name containing the dataset")
+
+    # --- Optional arguments (matching your class defaults) ---
+    parser.add_argument("--net", type=str, default="REF",
+                        help="Network type (default: REF)")
+
+    parser.add_argument("--VAE_enable", type=bool, default=True,
+                        help="Enable VAE (default: True)")
+
+    parser.add_argument("--num_epochs", type=int, default=300,
+                        help="Number of epochs (default: 300)")
+
+    parser.add_argument("--LR", type=float, default=1e-4,
+                        help="Learning rate (default: 1e-4)")
+
+    parser.add_argument("--batch", type=int, default=1,
+                        help="Batch size (default: 1)")
+
+    parser.add_argument("--degradation_type", type=str, default="downsampling",
+                        help="Degradation type (default: downsampling)")
+
+    parser.add_argument("--downsamp_type", type=str, default="bilinear",
+                        help="Downsampling type (default: bilinear)")
+
+    parser.add_argument("--ds_ratio", type=float, default=1,
+                        help="Downsampling ratio (default: 1)")
+
+    return parser.parse_args()
