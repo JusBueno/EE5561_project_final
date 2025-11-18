@@ -14,9 +14,11 @@ The general command format is:
 python train.py <folder> [optional arguments]
 
 Required positional argument:
+
 folder : Name or path of the folder where the training session will be saved.
-`
+
 Optional arguments:
+
 --resume : Whether to resume training if a previous checkpoint is found in the folder. Default is True.
 
 --net : Network type to use. Default is "REF".
@@ -34,7 +36,7 @@ Optional arguments:
 --downsamp_type : Type of downsampling interpolation. Default is "bilinear".
 
 --ds_ratio : Downsampling ratio. Default is 1.
-`
+
 
 Examples:
 
