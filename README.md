@@ -18,13 +18,21 @@ folder : Name or path of the folder where the training session will be saved.
 `
 Optional arguments:
 --resume : Whether to resume training if a previous checkpoint is found in the folder. Default is True.
+
 --net : Network type to use. Default is "REF".
+
 --VAE_enable : Enable or disable the VAE module. Default is True.
+
 --num_epochs : Number of epochs to train. Default is 300.
+
 --LR : Learning rate. Default is 1e-4.
+
 --batch : Batch size. Default is 1.
+
 --degradation_type : Type of image degradation to apply. Default is "downsampling".
+
 --downsamp_type : Type of downsampling interpolation. Default is "bilinear".
+
 --ds_ratio : Downsampling ratio. Default is 1.
 `
 
