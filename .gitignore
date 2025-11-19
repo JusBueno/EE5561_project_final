@@ -3,3 +3,4 @@ __pychache__/
 *.tar
 *.pyc
 mocking_epoch_time.py
+*.cpython-310.pyc
