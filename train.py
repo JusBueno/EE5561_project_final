@@ -13,7 +13,7 @@ from src.reference_net_mod02 import NvNet_MOD02
 from src.reference_net_mod03 import NvNet_MOD03
 from config import Training_Parameters, parse_args
 
-
+print('testing branch')
 #=========== SETUP PARAMETERS ===============
 
 args = parse_args()
