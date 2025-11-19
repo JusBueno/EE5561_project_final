@@ -29,7 +29,8 @@ if resume_training: #Load existing params
     with open(results_path/'params.pkl', 'rb') as f:
         params = pickle.load(f)
     checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
-    validation_metrics = np.load(results_path / "training_metrics.npy")
+    validation_metrics = np.load(results_path / "validation_metrics.npy")
+    training_metrics = np.load(results_path / "training_metrics.npy")
     best_val_dice = validation_metrics.max(axis=0)[0]
 else:
     #Initialize training parameters

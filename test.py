@@ -11,35 +11,65 @@ from src.reference_net import *
 from src.reference_net_mod01 import NvNet_MOD01
 from src.reference_net_mod02 import NvNet_MOD02
 from src.reference_net_mod03 import NvNet_MOD03
-from config import Training_Parameters
+from config import Training_Parameters, parse_args
 
 
 #=========== SETUP PARAMETERS ===============
 
-#Get command line arguments
-label = sys.argv[1]
+args = parse_args()
+label = args.folder
 
 #Directory for output results
-results_path = Path('training_results')/label
-resume_training = results_path.is_dir()
-results_path.mkdir(parents=True, exist_ok=True)
-
+results_path = Path('training_results')/args.folder
+if not (results_path/"checkpoint.pth.tar").is_file():
+    print("ERROR: File not found")
+    sys.exit(1)
 
 with open(results_path/'params.pkl', 'rb') as f:
     params = pickle.load(f)
 checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
-validation_metrics = np.load(results_path / "training_metrics.npy")
-epoch = 150
+validation_metrics = np.load(results_path / "validation_metrics.npy")
+training_metrics = np.load(results_path / "training_metrics.npy")
+best_val_dice = validation_metrics.max(axis=0)[0]
 
-fig,  ax = plt.subplots(1,3,figsize = (8,3))
-title_list = ["Dice coefficient", "MSE", "KL Divergence"]
-for i in range(3):
-    ax[i].plot(validation_metrics[2:epoch+1, i])
-    ax[i].set_xlabel("Epochs")
-    ax[i].set_ylabel(title_list[i])
+epoch = 100
+
+if params.VAE_enable:
+    fig,  ax = plt.subplots(1,3,figsize = (8,3.5))
+    title_list = ["Dice coefficient", "MSE", "KL Divergence"]
+    
+    ax[0].plot(1-(training_metrics[:epoch+1, 0]/3), label='Training')
+    ax[0].plot(validation_metrics[:epoch+1, 0], label='Validation')
+    ax[0].set_xlabel("Epochs", fontsize = 13)
+    ax[0].set_ylabel("Dice coefficient", fontsize = 13)
+    #ax[0].legend(fontsize = 10)
+    
+    for i in range(1,3):
+        ax[i].plot(validation_metrics[:epoch+1, i], label='Validation')
+        ax[i].plot(training_metrics[:epoch+1, i], label='Training')
+        ax[i].set_xlabel("Epochs", fontsize = 13)
+        ax[i].set_ylabel(title_list[i], fontsize = 13)
+    
+    ax[2].legend(fontsize = 10)
+    fig.suptitle(f"Network: {params.net}, VAE is {params.VAE_enable}", fontsize=13)
+   
+    
+else:
+    fig,  ax = plt.subplots(1,1,figsize = (3.5,3.5))
+    
+    ax.plot(1-training_metrics[:epoch+1, 0]/3, label='Training')
+    ax.plot(validation_metrics[:epoch+1, 0], label='Validation')
+    ax.set_xlabel("Epochs", fontsize = 13)
+    ax.set_ylabel("Dice coefficient", fontsize = 13)
+    ax.legend(fontsize = 10)
+    ax.set_title(f"Network: {params.net}, VAE is {params.VAE_enable}", fontsize=13)
+
 
 fig.tight_layout()
 fig.savefig(results_path/"loss_curves.png")
+
+
+
 
 """
 
