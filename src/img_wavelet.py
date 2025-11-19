@@ -48,7 +48,7 @@ def img_wavelet(img):
     rounded up by one. Handles non-square images.
     
     Implementation from chp7, digital image processing, 
-    Gonzales 4th edition.'''
+    Gonzales, 4th edition.'''
     rows, cols = img.shape
 
     # Using haar wavelets
