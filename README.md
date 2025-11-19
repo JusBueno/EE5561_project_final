@@ -38,30 +38,37 @@ folder : Name or path of the folder where the training session will be saved.
 --ds_ratio : Downsampling ratio. Default is 1.
 
 
-Examples:
+**Examples:**
 
 Run training with default settings:
-python train.py experiment1
+
+`python train.py experiment1`
 
 Run training with more epochs and VAE disabled:
-python train.py experiment1 --num_epochs 500 --VAE_enable False
+
+`python train.py experiment1 --num_epochs 500 --VAE_enable False`
 
 Use a different network and bicubic downsampling:
-python train.py experimentA --net UNET --downsamp_type bicubic --ds_ratio 2
+
+`python train.py experimentA --net UNET --downsamp_type bicubic --ds_ratio 2`
 
 Start a fresh training session even if checkpoints exist in the folder:
-python train.py output_folder --resume False
 
-
+`python train.py output_folder --resume False`
 
 The output folder will contain all training-related files, making each session fully reproducible and self-contained.
 
-# Running commands for report 
+**More examples:**
 
 `
 python train.py MOD_02_TEST_01 --start_new --net MOD_02 --VAE_enable --ds_ratio 2
 `
 
 `
-python train.py MOD_02_TEST_01 --start_new --net MOD_02 --VAE_disable --ds_ratio 2
+python train.py MOD_02_TEST_02 --start_new --net MOD_02 --VAE_disable --ds_ratio 2
 `
+
+For selecting gpu for execution:
+
+`CUDA_VISIBLE_DEVICES=0`
+
