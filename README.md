@@ -55,3 +55,13 @@ python train.py output_folder --resume False
 
 
 The output folder will contain all training-related files, making each session fully reproducible and self-contained.
+
+# Running commands for report 
+
+`
+python train.py MOD_02_TEST_01 --start_new --net MOD_02 --VAE_enable --ds_ratio 2
+`
+
+`
+python train.py MOD_02_TEST_01 --start_new --net MOD_02 --VAE_disable --ds_ratio 2
+`
