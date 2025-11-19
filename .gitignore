@@ -2,3 +2,4 @@ src/__pychache__/
 __pychache__/
 *.tar
 *.pyc
+*.cpython-310.pyc

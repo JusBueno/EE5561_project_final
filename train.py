@@ -51,6 +51,9 @@ else:
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if device == "cpu":
+    print("Warning: Running on CPU")
+    
 data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
 validation_metrics = np.zeros((params.num_epochs,3))
 training_metrics = np.zeros((params.num_epochs,3))
