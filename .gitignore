@@ -1,5 +1,5 @@
-src/__pychache__/
-__pychache__/
+src/__pycache__/
+__pycache__/
 *.tar
 *.pyc
 mocking_epoch_time.py

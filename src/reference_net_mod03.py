@@ -268,7 +268,7 @@ class NvNet_MOD03(nn.Module):
         # Original input shape and forced input shape
         self.old_in_shape = (input_shape[1] // (2 ** HR_layers), input_shape[2] // (2 ** HR_layers), input_shape[3] // (2 ** HR_layers))
         self.shape_trans, self.new_in_shape = make_divisible_crop_or_pad(self.old_in_shape, 16)
-        
+
         # some critical parameters
         self.inChans = inChans
         self.input_shape = (input_shape[0], self.new_in_shape[0], self.new_in_shape[1], self.new_in_shape[2])
@@ -384,7 +384,7 @@ def make_divisible_crop_or_pad(shape, s):
 
     # Compute target sizes (smallest multiples of s)
     def target_size(x):
-        return ((x + s - 1) // s) * s  # ceil(x / s) * s
+        return int(((x + s - 1) // s) * s)  # ceil(x / s) * s
 
     N2 = target_size(N)
     M2 = target_size(M)
