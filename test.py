@@ -21,13 +21,13 @@ label = args.folder
 
 #Directory for output results
 results_path = Path('training_results')/args.folder
-if not (results_path/"checkpoint.pth.tar").is_file():
+if not (results_path/"params.pkl").is_file():
     print("ERROR: File not found")
     sys.exit(1)
 
 with open(results_path/'params.pkl', 'rb') as f:
     params = pickle.load(f)
-checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
+
 validation_metrics = np.load(results_path / "validation_metrics.npy")
 training_metrics = np.load(results_path / "training_metrics.npy")
 best_val_dice = validation_metrics.max(axis=0)[0]
