@@ -1,5 +1,6 @@
 import sys
 import pickle
+import time
 from pathlib import Path
 from tqdm import tqdm
 from torch.optim.lr_scheduler import LambdaLR
@@ -12,7 +13,6 @@ from src.reference_net_mod01 import NvNet_MOD01
 from src.reference_net_mod02 import NvNet_MOD02
 from src.reference_net_mod03 import NvNet_MOD03
 from config import Training_Parameters, parse_args
-
 
 #=========== SETUP PARAMETERS ===============
 
@@ -52,9 +52,19 @@ else:
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if device == "cpu":
+    print("Warning: Running on CPU")
+    
 data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
 validation_metrics = np.zeros((params.num_epochs,3))
 training_metrics = np.zeros((params.num_epochs,3))
+
+epoch_times_file = results_path / "epoch_times.npy"
+if resume_training and epoch_times_file.exists():
+    epoch_times = np.load(epoch_times_file)
+else:
+    epoch_times = np.zeros(params.num_epochs)
+
 
 #=========== SETUP DATASETS AND DATA LOADERS ===============
 
@@ -126,6 +136,8 @@ best_epoch = True
 
 while epoch < params.num_epochs:
 
+    epoch_start = time.time()
+
     model.train()
     train_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{params.num_epochs} [Training]")
 
@@ -178,6 +190,10 @@ while epoch < params.num_epochs:
     if(best_epoch and params.save_model_each_epoch):
         torch.save(checkpoint, results_path / "best_checkpoint.pth.tar")
         plot_examples(model, val_dataset, range(10), results_path, params.net, VAE_enable = params.VAE_enable)
+
+    epoch_end = time.time()
+    epoch_times[epoch] = epoch_end - epoch_start
+    np.save(results_path / "epoch_times.npy", epoch_times)
 
     epoch += 1
     scheduler.step() #Adjust learning rate
