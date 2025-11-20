@@ -158,24 +158,13 @@ while epoch < params.num_epochs:
         if params.net == "VAE_2D":
             central_index = params.slab_dim//2
             central_slice = out_imgs[:,central_index,:,:].unsqueeze(1) #Get central slice for VAE output
-            seg_out, vae_out, mu, logvar = model(inp_imgs)
-            combined_loss = criterion(seg_out, mask, vae_out, central_slice, mu, logvar)
-        elif params.net == "UNET_2D":
-            seg_out = model(inp_imgs)
-            combined_loss = criterion(seg_out, mask)
-        elif params.net in ["REF", "MOD_01", "MOD_02", "MOD_03"]:
-            seg_pred, rec_pred, y_mid = model(inp_imgs)
-            combined_loss, dice_loss, l2_loss, kl_div = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
-            training_metrics[epoch,0] += dice_loss
-            training_metrics[epoch,1] += l2_loss
-            training_metrics[epoch,2] += kl_div
         break
     
 
 
 phantom = shepp_logan_phantom()
 phantom = phantom.astype(np.float32)
-phantom = resize(phantom, (256, 256), anti_aliasing=True).astype(np.float32)
+phantom = resize(phantom, (240, 240), anti_aliasing=True).astype(np.float32)
 phantom = central_slice
 
 img_down = downsample(phantom, 2)
