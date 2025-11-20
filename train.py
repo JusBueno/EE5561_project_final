@@ -49,6 +49,8 @@ else:
     with open(results_path /'params.pkl', 'wb') as f:
         pickle.dump(params, f)
     best_val_dice = 0
+    validation_metrics = np.zeros((params.num_epochs,3))
+    training_metrics = np.zeros((params.num_epochs,3))
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -56,8 +58,7 @@ if device == "cpu":
     print("Warning: Running on CPU")
     
 data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
-validation_metrics = np.zeros((params.num_epochs,3))
-training_metrics = np.zeros((params.num_epochs,3))
+
 
 epoch_times_file = results_path / "epoch_times.npy"
 if resume_training and epoch_times_file.exists():
