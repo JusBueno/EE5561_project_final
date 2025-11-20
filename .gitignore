@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 mocking_epoch_time.py
 *.cpython-310.pyc
+*copy/
