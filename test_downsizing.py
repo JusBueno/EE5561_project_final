@@ -35,8 +35,6 @@ central_index = out_imgs.shape[1] // 2 # index along depth D
 central_slice = out_imgs[0, central_index, :, :] # shape [H, W]
 print("central_slice shape:", central_slice.shape)
     
-
-
 phantom = shepp_logan_phantom()
 phantom = phantom.astype(np.float32)
 phantom = resize(phantom, (240, 240), anti_aliasing=True).astype(np.float32)
@@ -45,27 +43,29 @@ phantom = resize(phantom, (240, 240), anti_aliasing=True).astype(np.float32)
 phantom = central_slice[70, :, :]
 
 print('phantom_shape', phantom.shape)
-img_down = downsample(phantom, 2)
-img_filtered_down = filter_downsample(phantom, 2)
+img_down = downsample(phantom, 4)
+img_filtered_down = filter_downsample(phantom, 4)
+
 img_wav = img_wavelet(phantom)
+img_wav = img_wavelet(img_wav)
 
 # Plots
-fig, axes = plt.subplots(1, 4, figsize=(16, 4))
+fig, axes = plt.subplots(1, 4, figsize=(16, 5))
 
 axes[0].imshow(phantom, cmap="gray")
 axes[0].set_title("Original 240x240")
 axes[0].axis("off")
 
 axes[1].imshow(img_down, cmap="gray")
-axes[1].set_title("Decimation by 2")
+axes[1].set_title("Decimation by 4")
 axes[1].axis("off")
 
 axes[2].imshow(img_filtered_down, cmap="gray")
-axes[2].set_title("Antialias-filtered and decimation by 2")
+axes[2].set_title("Antialias-filtered and decimation by 4")
 axes[2].axis("off")
 
 axes[3].imshow(img_wav, cmap="gray")
-axes[3].set_title("First wavelet level")
+axes[3].set_title("Second wavelet level")
 axes[3].axis("off")
 
 plt.tight_layout()
