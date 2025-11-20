@@ -11,35 +11,31 @@ import pickle
 from pathlib import Path
 from torch.utils.data import DataLoader
 from src.data_preparation import BRATS_dataset
+from src.downsample import filter_downsample
 
-# ==== CONFIG ====
-# Folder name under training_results/ that contains params.pkl
-label = "MOD01_Test01"   # <-- change this to your run folder name
-
+# ===== CONFIG =====
+label = "testing_file"  # or whatever folder has params.pkl
 data_path = "../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/"
 
-# ==== LOAD PARAMS ====
+# ===== LOAD PARAMS =====
 results_path = Path("training_results") / label
 with open(results_path / "params.pkl", "rb") as f:
     params = pickle.load(f)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# ==== BUILD DATASET & LOADER ====
+# ===== DATASET & LOADER =====
 dataset = BRATS_dataset(data_path, device, params)
 loader = DataLoader(dataset, batch_size=1, shuffle=True)
 
-# Get a single batch
+# Get one sample: out_imgs shape is [1, D, H, W]
 out_imgs, inp_imgs, mask = next(iter(loader))
+print("out_imgs shape:", out_imgs.shape)
 
-# Assume out_imgs shape is [B, D, H, W]
-central_index = out_imgs.shape[1] // 2
-central_slice = out_imgs[:, central_index, :, :]  # shape [1, H, W]
-
+# ----- GET CENTRAL 2D SLICE -----
+central_index = out_imgs.shape[1] // 2          # index along depth D
+central_slice = out_imgs[0, central_index, :, :]  # shape [H, W]
 print("central_slice shape:", central_slice.shape)
-
-# If you need a NumPy array for downstream task:
-central_slice_ = central_slice.squeeze(0).cpu().numpy()
     
 
 
