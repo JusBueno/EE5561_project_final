@@ -42,8 +42,9 @@ print("central_slice shape:", central_slice.shape)
 phantom = shepp_logan_phantom()
 phantom = phantom.astype(np.float32)
 phantom = resize(phantom, (240, 240), anti_aliasing=True).astype(np.float32)
-phantom = central_slice
+phantom = central_slice[70, :, :]
 
+print('phantom_shape', phantom.shape)
 img_down = downsample(phantom, 2)
 img_filtered_down = filter_downsample(phantom, 2)
 img_wav = img_wavelet(phantom)
