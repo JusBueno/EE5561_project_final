@@ -5,7 +5,6 @@ from skimage.transform import resize
 from src.downsample import downsample, filter_downsample
 from src.img_wavelet import img_wavelet
 from src.degradate_reconstruct import transform_downsample_reconstruct
-
 import torch
 import pickle
 from pathlib import Path
@@ -13,18 +12,17 @@ from torch.utils.data import DataLoader
 from src.data_preparation import BRATS_dataset
 from src.downsample import filter_downsample
 
-# ===== CONFIG =====
-label = "testing_file"  # or whatever folder has params.pkl
+label = "testing_file"
 data_path = "../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/"
 
-# ===== LOAD PARAMS =====
+# Load parameters
 results_path = Path("training_results") / label
 with open(results_path / "params.pkl", "rb") as f:
     params = pickle.load(f)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# ===== DATASET & LOADER =====
+# Load data
 dataset = BRATS_dataset(data_path, device, params)
 loader = DataLoader(dataset, batch_size=1, shuffle=True)
 
@@ -32,9 +30,9 @@ loader = DataLoader(dataset, batch_size=1, shuffle=True)
 out_imgs, inp_imgs, mask = next(iter(loader))
 print("out_imgs shape:", out_imgs.shape)
 
-# ----- GET CENTRAL 2D SLICE -----
-central_index = out_imgs.shape[1] // 2          # index along depth D
-central_slice = out_imgs[0, central_index, :, :]  # shape [H, W]
+# Get central slice
+central_index = out_imgs.shape[1] // 2 # index along depth D
+central_slice = out_imgs[0, central_index, :, :] # shape [H, W]
 print("central_slice shape:", central_slice.shape)
     
 
@@ -42,6 +40,8 @@ print("central_slice shape:", central_slice.shape)
 phantom = shepp_logan_phantom()
 phantom = phantom.astype(np.float32)
 phantom = resize(phantom, (240, 240), anti_aliasing=True).astype(np.float32)
+
+# override phatom with a real example
 phantom = central_slice[70, :, :]
 
 print('phantom_shape', phantom.shape)
