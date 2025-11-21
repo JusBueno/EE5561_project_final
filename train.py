@@ -12,6 +12,7 @@ from src.reference_net import *
 from src.reference_net_mod01 import NvNet_MOD01
 from src.reference_net_mod02 import NvNet_MOD02
 from src.reference_net_mod03 import NvNet_MOD03
+from src.network_3D import REF_VAE_UNET_3D, VAE_UNET_3D_M01
 from config import Training_Parameters, parse_args
 
 #=========== SETUP PARAMETERS ===============
@@ -104,7 +105,11 @@ elif params.net == "MOD_02":
     model = NvNet_MOD02(inChans, output_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
 elif params.net == "MOD_03":
     model = NvNet_MOD03(inChans, output_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
-
+elif params.net == "REF_US":
+    model = REF_VAE_UNET_3D(in_channels=inChans, input_dim=np.asarray([params.slab_dim, 240, 240], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable)
+elif params.net == "VAE_M01":
+    model = VAE_UNET_3D_M01(in_channels=inChans, input_dim=np.asarray([params.slab_dim, 240, 240], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
+    
 model = model.to(device)
 
 if torch.cuda.device_count() >= 2:
@@ -153,7 +158,7 @@ while epoch < params.num_epochs:
         elif params.net == "UNET_2D":
             seg_out = model(inp_imgs)
             combined_loss = criterion(seg_out, mask)
-        elif params.net in ["REF", "MOD_01", "MOD_02", "MOD_03"]:
+        elif params.net in ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US", "VAE_M01"]:
             seg_pred, rec_pred, y_mid = model(inp_imgs)
             combined_loss, dice_loss, l2_loss, kl_div = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
             training_metrics[epoch,0] += dice_loss
