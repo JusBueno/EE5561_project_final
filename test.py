@@ -85,7 +85,11 @@ epochs = np.arange(1, len(epoch_times_to_plot) + 1)
 avg = np.mean(epoch_times_to_plot)
 max = np.max(epoch_times_to_plot)
 min = np.min(epoch_times_to_plot)
+<<<<<<< HEAD
 std = np.std(epoch_times_to_plot,ddof=1)/np.sqrt(len(epoch_time_to_plot))
+=======
+std = np.std(epoch_times_to_plot,ddof=1)/np.sqrt(len(epoch_times_to_plot))
+>>>>>>> 88a82ca3eea3b22fd7283cc54c87299af10b3659
 stats = f"Avg:{avg:.1f} secs\nsigma:{std:.2f} secs\nMax:{max:.1f} secs\nMin:{min:.1f} secs"
 
 plt.figure()
