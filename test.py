@@ -51,7 +51,7 @@ if params.VAE_enable:
         ax[i].set_ylabel(title_list[i], fontsize = 13)
     
     ax[2].legend(fontsize = 10)
-    fig.suptitle(f"Network: {params.net}, VAE is {params.VAE_enable}", fontsize=13)
+    fig.suptitle(f"Network: {params.net}, VAE is {params.VAE_enable}, best VAL DICE = {best_val_dice:.3f}", fontsize=13)
    
     
 else:
@@ -62,7 +62,7 @@ else:
     ax.set_xlabel("Epochs", fontsize = 13)
     ax.set_ylabel("Dice coefficient", fontsize = 13)
     ax.legend(fontsize = 10)
-    ax.set_title(f"Network: {params.net}, VAE is {params.VAE_enable}", fontsize=13)
+    ax.set_title(f"Network: {params.net}, VAE is {params.VAE_enable}, best VAL DICE = {best_val_dice:.3f}", fontsize=13)
 
 
 fig.tight_layout()
@@ -85,7 +85,8 @@ epochs = np.arange(1, len(epoch_times_to_plot) + 1)
 avg = np.mean(epoch_times_to_plot)
 max = np.max(epoch_times_to_plot)
 min = np.min(epoch_times_to_plot)
-stats = f"Avg:{avg:.1f} secs\nMax:{max:.1f} secs\nMin:{min:.1f} secs"
+std = np.std(epoch_times_to_plot,ddof=1)/np.sqrt(len(epoch_time_to_plot))
+stats = f"Avg:{avg:.1f} secs\nsigma:{std:.2f} secs\nMax:{max:.1f} secs\nMin:{min:.1f} secs"
 
 plt.figure()
 plt.plot(epochs, epoch_times_to_plot)
