@@ -71,12 +71,40 @@ def img_wavelet(img):
     
     return img_col_dwt
 
+def img_wavelet_3d(img):
+    ''' Returns 1st level "Blur" 3d wavelet of img.
+    The output is downsized by 2 if dimesion is even.
+    If it is odd, output dimension is downsized by 2 and
+    rounded up by one. Handles non-square images.'''
+    slides, rows, cols = img.shape
 
+    # Using haar wavelets
+    scaling_function = (1/np.sqrt(2)) * np.array([1, 1])
+    wavelet_function =  (1/np.sqrt(2)) * np.array([1, -1])
 
+    cols_new = math.ceil(cols/2)
+    img_row_dwt = np.zeros((slides, rows, cols_new))
+    for slide in range(slides):
+        for row in range(rows):
+            img_row_dwt[slide, row, :] = dwt_1d(img[slide, row, :], 1, 
+                                        scaling_function, 
+                                        wavelet_function)[0]['approximation']
 
-
-
-
-
-
-
+    rows_new = math.ceil(rows/2)
+    img_col_dwt = np.zeros((slides, rows_new, cols_new))
+    for slide in range(slides):
+        for col in range(cols_new):
+            img_col_dwt[slide, :, col] = dwt_1d(img_row_dwt[slide, :, col], 1, 
+                                        scaling_function, 
+                                        wavelet_function)[0]['approximation']
+            
+    
+    slides_new = math.ceil(slides/2)
+    img_slide_dwt = np.zeros((slides_new, rows_new, cols_new))
+    for row in range(rows_new):
+        for col in range(cols_new):
+            img_slide_dwt[:, row, col] = dwt_1d(img_col_dwt[:, row, col], 1, 
+                                        scaling_function, 
+                                        wavelet_function)[0]['approximation']
+    
+    return img_slide_dwt
