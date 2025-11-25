@@ -20,8 +20,11 @@ def transform_downsample(img, percentage):
 
     return img_fourier_down, mask
 
+
 def transform_downsample_reconstruct(img, percentage):
-    '''Generate degradated and then reconstructed images'''
+    '''Generate degraded and then reconstructed images
+    It works for very small images only
+    '''
     rows, cols = img.shape
     img_fourier_down, mask = transform_downsample(img, percentage)
 
@@ -42,7 +45,10 @@ def transform_downsample_reconstruct(img, percentage):
     prob.solve(solver=cp.SCS)
     return X.value
 
-
-
-
+def degrade(img, percentage):
+    '''Just degradation of images'''
+    img_fourier_down, mask = transform_downsample(img, percentage)
+    img_fourier_down = np.fft.ifftshift(img_fourier_down)
+    degraded = np.abs(np.fft.ifft2(img_fourier_down)) # ideally, work with complex data
+    return degraded, img
 
