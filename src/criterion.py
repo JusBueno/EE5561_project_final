@@ -55,19 +55,35 @@ class CustomKLLoss(_Loss):
         return torch.mean(torch.mul(mean, mean)) + torch.mean(torch.mul(std, std)) - torch.mean(torch.log(torch.mul(std, std))) - 1
 
 
+class CustomKLLoss_2(_Loss):
+    '''
+    KL_Loss = (|dot(mean , mean)| + |dot(std, std)| - |log(dot(std, std))| - 1) / N
+    N is the total number of image voxels
+    '''
+    def __init__(self, *args, **kwargs):
+        super(CustomKLLoss_2, self).__init__()
+
+    def forward(self, mean, logvar):
+        var = torch.exp(logvar)
+        return torch.mean(torch.mul(mean, mean)) + torch.mean(var) - torch.mean(logvar) - 1
+
+
 class CombinedLoss(_Loss):
     '''
     Combined_loss = Dice_loss + k1 * L2_loss + k2 * KL_loss
     As default: k1=0.1, k2=0.1
     Accepts either 5 inputs (if using VAE) or 2 (if not using VAE)
     '''
-    def __init__(self, k1=0.1, k2=0.1,VAE_enable=True, separate = False):
+    def __init__(self, k1=0.1, k2=0.1,VAE_enable=True, separate = False, logvar_out=False):
         super(CombinedLoss, self).__init__()
         self.k1 = k1
         self.k2 = k2
         self.dice_loss = SoftDiceLoss()
         self.l2_loss = nn.MSELoss()
-        self.kl_loss = CustomKLLoss()
+        if logvar_out:
+            self.kl_loss = CustomKLLoss_2()
+        else:
+            self.kl_loss = CustomKLLoss()
         self.VAE_enable = VAE_enable
         self.separate = separate
 

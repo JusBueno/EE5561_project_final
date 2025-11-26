@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from src.criterion import *
 
 
-def test_model(model, test_loader, net_type, VAE_enable = True):
+def test_model(model, test_loader, net_type, VAE_enable = True, logvar_out=False):
     """
     Testing function for the model
     model: model to be tested
@@ -16,8 +16,10 @@ def test_model(model, test_loader, net_type, VAE_enable = True):
     model.eval()
     test_bar = tqdm(test_loader, desc=f"[Validation]")
     metrics = np.zeros((3,))
-    
-    kl_loss_ref = CustomKLLoss() #KL divergence from the github repo
+    if logvar_out:
+        kl_loss_ref = CustomKLLoss_2()
+    else:
+        kl_loss_ref = CustomKLLoss() #KL divergence from the github repo
     MSE_loss = nn.MSELoss()
     
     with torch.no_grad():
