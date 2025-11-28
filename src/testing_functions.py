@@ -21,15 +21,14 @@ def test_model(model, test_loader, net_type, VAE_enable = True, logvar_out=False
     else:
         kl_loss_ref = CustomKLLoss() #KL divergence from the github repo
     MSE_loss = nn.MSELoss()
-    
+    dice_loss = SoftDiceLoss()
     with torch.no_grad():
         for out_img, inp_img, mask in test_bar:
             
             seg_out, rec_y_pred, y_mid = model(inp_img)
             seg_out = torch.round(seg_out)
-            dice = soft_dice_coeff(seg_out, mask)
            
-            metrics[0] += dice.mean()
+            metrics[0] += dice_loss(seg_out, mask)
                 
             if(VAE_enable):
                 est_mean, est_std = (y_mid[:, :128], y_mid[:, 128:])
@@ -128,3 +127,41 @@ def plot_examples(model, test_dataset, slices, save_path, net_type, VAE_enable =
         
     
     
+
+def plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, VAE_enable, net_type):
+
+    best_val_dice = validation_metrics.max(axis=0)[0]
+
+    if VAE_enable:
+        fig,  ax = plt.subplots(1,3,figsize = (8,3.5))
+        title_list = ["Dice coefficient", "MSE", "KL Divergence"]
+        
+        ax[0].plot(training_metrics[:epoch+1, 0], label='Training')
+        ax[0].plot(validation_metrics[:epoch+1, 0], label='Validation')
+        ax[0].set_xlabel("Epochs", fontsize = 13)
+        ax[0].set_ylabel("Dice coefficient", fontsize = 13)
+        #ax[0].legend(fontsize = 10)
+        
+        for i in range(1,3):
+            ax[i].plot(validation_metrics[:epoch+1, i], label='Validation')
+            ax[i].plot(training_metrics[:epoch+1, i], label='Training')
+            ax[i].set_xlabel("Epochs", fontsize = 13)
+            ax[i].set_ylabel(title_list[i], fontsize = 13)
+        
+        ax[2].legend(fontsize = 10)
+        fig.suptitle(f"Network: {net_type}, VAE is {VAE_enable}, best VAL DICE = {best_val_dice:.3f}", fontsize=13)
+    
+        
+    else:
+        fig,  ax = plt.subplots(1,1,figsize = (3.5,3.5))
+        
+        ax.plot(1-training_metrics[:epoch+1, 0]/3, label='Training')
+        ax.plot(validation_metrics[:epoch+1, 0], label='Validation')
+        ax.set_xlabel("Epochs", fontsize = 13)
+        ax.set_ylabel("Dice coefficient", fontsize = 13)
+        ax.legend(fontsize = 10)
+        ax.set_title(f"Network: {net_type}, VAE is {VAE_enable}, best VAL DICE = {best_val_dice:.3f}", fontsize=13)
+
+
+    fig.tight_layout()
+    fig.savefig(results_path/"loss_curves.png")

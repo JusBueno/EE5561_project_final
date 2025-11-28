@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from tqdm import tqdm
 from torch.optim.lr_scheduler import LambdaLR
+from torch.utils.data import DataLoader, random_split
 from src.data_preparation import *
 from src.network import *
 from src.criterion import *
@@ -43,7 +44,8 @@ else:
         batch=args.batch,
         degradation_type=args.degradation_type,
         downsamp_type=args.downsamp_type,
-        ds_ratio=args.ds_ratio
+        ds_ratio=args.ds_ratio,
+        crop = args.crop
     )
     params.batch_size *= torch.cuda.device_count() # If parallel training
     #Save the parameters to keep track of what we ran
@@ -89,8 +91,8 @@ val_loader = DataLoader(val_dataset, batch_size=1)
 #=========== SETUP MODEL AND OPTIMIZER ===============
 
 inChans = 4; seg_outChans = 3
-input_shape = (inChans, params.slab_dim//params.ds_ratio, 240//params.ds_ratio, 240//params.ds_ratio)
-output_shape = (inChans, params.slab_dim, 240, 240) # Reference input (not downsized or degraded)
+input_shape = dataset.input_dim
+output_shape = dataset.output_dim
 
 #With VAE branch
 if params.net == "VAE_2D":
@@ -153,7 +155,6 @@ while epoch < params.num_epochs:
     train_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{params.num_epochs} [Training]")
 
     for out_imgs, inp_imgs, mask in train_bar:
-
         optimizer.zero_grad()
         if params.net == "VAE_2D":
             central_index = params.slab_dim//2
@@ -188,6 +189,8 @@ while epoch < params.num_epochs:
         dice = validation_metrics[epoch,0]
         best_epoch = dice > best_val_dice
         if(best_epoch): best_val_dice = dice
+        plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, params.net)
+
             
     checkpoint = {
         'best_dice': best_val_dice,
