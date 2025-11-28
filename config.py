@@ -40,13 +40,17 @@ def parse_args():
 
     parser.add_argument("--ds_ratio", type=int, default=1,
                         help="Downsampling ratio (default: 1)")
+    
+    parser.add_argument("--crop", action="store_true")
+    parser.add_argument("--no_crop", action="store_false", dest="crop")
+    parser.set_defaults(crop=False)
 
     return parser.parse_args()
 
 #Choose parameters
 class Training_Parameters:
     def __init__(self, net = "REF", VAE_enable = True, num_epochs = 300, LR = 1e-4, batch = 1, degradation_type = 'downsampling',
-                 downsamp_type = 'bilinear', ds_ratio = 1):
+                 downsamp_type = 'bilinear', ds_ratio = 1, crop = True):
         
         #Choose a network
         possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US", "VAE_M01", "VAE_M04"]
@@ -61,8 +65,7 @@ class Training_Parameters:
         self.train_ratio = 0.8              #What ratio of dataset for training (Training ratio = 1 - validation ratio)
         self.validation = True              #Whether you want validation each epoch
         self.save_model_each_epoch = True   #Save model and training parameters every epoch
-        
-        
+        self.crop = crop
         
         #Choose which type of downsampling/degradation
         self.degradation_type = degradation_type
@@ -77,7 +80,8 @@ class Training_Parameters:
         self.slab_dim = 144
         self.slabs_per_volume = 1
         self.num_volumes = 369  #Maximum = 369 for the training dataset
-        self.data_shape = [240,240,155]
+        self.data_shape = [240,240,155] #Original data shape [Height x Width x Depth]
+        self.crop_size = [144,240,240] #Used data shape [Depth x Height x Width]
         self.modality_index = 0 #If single modality, which one to choose
         self.augment = True     #Perform data augmentation or not
         self.binary_mask = False 
