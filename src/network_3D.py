@@ -419,7 +419,7 @@ class VAE_UNET_3D_M01(nn.Module):
             #mu, logvar = torch.chunk(VAE_out, 2, dim=1)  # split into two 128-sized vectors
             VAE_out = self.VDraw(VAE_out)
             VAE_out = self.VU_1(VAE_out)
-            VAE_out = VAE_out.view(-1, 256, self.enc_dim[0] // 2, self.enc_dim[1] // 2, self.enc_dim[1] // 2)
+            VAE_out = VAE_out.view(-1, 256, self.enc_dim[0] // 2, self.enc_dim[1] // 2, self.enc_dim[2] // 2)
             VAE_out = self.VU_2(VAE_out)
             VAE_out = self.VUp2(VAE_out)
             VAE_out = VAE_out + self.VBlock2(VAE_out)
@@ -610,7 +610,7 @@ class VAE_UNET_3D_M04(nn.Module):
             #mu, logvar = torch.chunk(VAE_out, 2, dim=1)  # split into two 128-sized vectors
             VAE_out = self.VDraw(VAE_out)
             VAE_out = self.VU_1(VAE_out)
-            VAE_out = VAE_out.view(-1, 256, self.enc_dim[0] // 2, self.enc_dim[1] // 2, self.enc_dim[1] // 2)
+            VAE_out = VAE_out.view(-1, 256, self.enc_dim[0] // 2, self.enc_dim[1] // 2, self.enc_dim[2] // 2)
             VAE_out = self.VU_2(VAE_out)
             VAE_out = self.VUp2(VAE_out)
             VAE_out = VAE_out + self.VBlock2(VAE_out)
@@ -755,8 +755,6 @@ if __name__ == "__main__":
     inChans = 4
     seg_outChans = 3
     input_shape = (1, 144, 240, 240)
-    activation = "relu"
-    normalization = "group_normalization"
     VAE_enable = True
 
     print("Local Test - Reference Net - Our Implementation")
