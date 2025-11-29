@@ -6,7 +6,7 @@ from typing import Literal
 import math
 
 class VAE_UNET_2D_M01(nn.Module):
-    def __init__(self, in_channels, input_dim=np.asarray([192,128], dtype=np.int64), num_classes = 4, VAE_enable=True, HR_layers=0, fusion: Literal["None", "Slab", "Modality", "Hybrid"] = "None",):
+    def __init__(self, in_channels, input_dim=np.asarray([192,128], dtype=np.int64), num_classes = 4, VAE_enable=True, HR_layers=0, fusion: Literal["None", "Slab", "Modality", "Hybrid"] = "None"):
         super(VAE_UNET_2D_M01, self).__init__()
 
         self.VAE_enable = VAE_enable
@@ -512,7 +512,7 @@ def make_crop_or_pad(in_shape, out_shape):
 
 # Local Test
 if __name__ == "__main__":
-    inChans = 4 * 3 # 4 Modalities, 3 Slabs
+    inChans = 4 * 3 # 4 Modalities, 3 Slices
     VAE_enable = True
     fusion = input("Fusion Options (None, Slab, Modality, Hybrid): ")
     if fusion not in ["None", "Slab", "Modality", "Hybrid"]:

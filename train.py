@@ -15,7 +15,7 @@ from src.reference_net_mod02 import NvNet_MOD02
 from src.reference_net_mod03 import NvNet_MOD03
 from src.network_3D import REF_VAE_UNET_3D, VAE_UNET_3D_M01, VAE_UNET_3D_M04
 from config import Training_Parameters, parse_args
-
+from src.network_2D import VAE_UNET_2D_M01
 #=========== SETUP PARAMETERS ===============
 
 args = parse_args()
@@ -113,14 +113,15 @@ elif params.net == "VAE_M01":
     model = VAE_UNET_3D_M01(in_channels=inChans, input_dim=np.asarray([params.slab_dim, 240, 240], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
 elif params.net == "VAE_M04":
     model = VAE_UNET_3D_M04(in_channels=inChans, input_dim=np.asarray([params.slab_dim, 240, 240], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
-    
+elif params.net == "VAE_2D":
+    model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=np.asarray([240, 240], dtype=np.int64), num_classes=4, VAE_enable=True, HR_layers=0, fusion=params.fusion)
 model = model.to(device)
 
 if torch.cuda.device_count() >= 2:
     model = nn.DataParallel(model)  
     print(f"Parallel training with {torch.cuda.device_count()} GPUs")
 
-if params.net in ["REF_US", "VAE_M01", "VAE_M04"]:
+if params.net in ["REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]:
     criterion = CombinedLoss(VAE_enable = params.VAE_enable, separate = True, logvar_out=True)
 else:
     criterion = CombinedLoss(VAE_enable = params.VAE_enable, separate = True)
@@ -181,7 +182,7 @@ while epoch < params.num_epochs:
 
     #---Validation    
     if(params.validation):
-        if params.net in ["REF_US", "VAE_M01", "VAE_M04"]:
+        if params.net in ["REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]:
             validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable, logvar_out=True)
         else:
             validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable)

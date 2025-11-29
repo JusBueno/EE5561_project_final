@@ -53,7 +53,7 @@ class Training_Parameters:
                  downsamp_type = 'bilinear', ds_ratio = 1, crop = True):
         
         #Choose a network
-        possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US", "VAE_M01", "VAE_M04"]
+        possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]
         
         self.net = net
         self.VAE_enable = VAE_enable
