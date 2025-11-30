@@ -69,38 +69,85 @@ fig.tight_layout()
 fig.savefig(results_path/"loss_curves.png")
 
 
-# Plot time metrics:
+# Plot time and GPU metrics:
 # Load the data
 results_path = Path("training_results") / sys.argv[1]
-save_path = results_path / "epoch_times_plot.png"
+
 epoch_times_path = results_path / "epoch_times.npy"
+train_times_path = results_path / "train_times.npy"
+val_times_path = results_path / "val_times.npy"
+gpu_mem_path = results_path / "gpu_memory_usage.npy"
+model_size_txt = results_path / "model_size_bytes.txt"
+
 epoch_times = np.load(epoch_times_path)
+train_times = np.load(train_times_path)
+val_times = np.load(val_times_path)
+gpu_mem_usage = np.load(gpu_mem_path)
+with open(model_size_txt, "r") as f:
+    model_size = float(f.readline().strip())
 
 # Remove zeros
 last_nonzero_idx = np.nonzero(epoch_times)[0][-1]
-epoch_times_to_plot = epoch_times[:last_nonzero_idx + 1]
-epochs = np.arange(1, len(epoch_times_to_plot) + 1)
+epoch_times = epoch_times[:last_nonzero_idx + 1]
+train_times = train_times[:last_nonzero_idx + 1]
+val_times = val_times[:last_nonzero_idx + 1]
+gpu_mem_usage = gpu_mem_usage[:last_nonzero_idx + 1]
 
-# Some metrics
-avg = np.mean(epoch_times_to_plot)
-max = np.max(epoch_times_to_plot)
-min = np.min(epoch_times_to_plot)
-std = np.std(epoch_times_to_plot,ddof=1)/np.sqrt(len(epoch_times_to_plot))
-stats = f"Avg:{avg:.1f} secs\nsigma:{std:.2f} secs\nMax:{max:.1f} secs\nMin:{min:.1f} secs"
+# Define epochs
+epochs = np.arange(1, len(epoch_times) + 1)
+
+# Time plots
+save_path_times = results_path / "epoch_times_plot.png"
+
+avg_total = np.mean(epoch_times)
+std_total = np.std(epoch_times,ddof=1)/np.sqrt(len(epoch_times))
+stats_total = f"Avg_total:{avg_total:.1f} secs; sigma_total:{std_total:.2f} secs\n"
+
+avg_train = np.mean(train_times)
+std_train = np.std(train_times,ddof=1)/np.sqrt(len(train_times))
+stats_train = f"Avg_train:{avg_train:.1f} secs; sigma_train:{std_train:.2f} secs\n"
+
+avg_val = np.mean(val_times)
+std_val = np.std(val_times,ddof=1)/np.sqrt(len(val_times))
+stats_val = f"Avg_val:{avg_val:.1f} secs; sigma_val:{std_val:.2f} secs"
+
+stats = stats_train + stats_val + stats_total
 
 plt.figure()
-plt.plot(epochs, epoch_times_to_plot)
+plt.plot(epochs, epoch_times, label="Total time")
+plt.plot(epochs, train_times, "--", label="Train time")
+plt.plot(epochs, val_times, "--", label="Validation time")
 plt.xlabel("Epoch")
 plt.ylabel("Time per epoch (seconds)")
-plt.title(f"Training time per epoch: {sys.argv[1]}")
+plt.title(f"Train, Validation & Total time per epoch: {sys.argv[1]}")
 plt.annotate(stats, (0.01,0.85),xycoords='axes fraction')
+plt.legend()
 plt.tight_layout()
-plt.savefig(save_path)
+plt.savefig(save_path_times)
 #plt.show()
 
+# GPU plot
+save_path_gpu = results_path / "gpu_mem_usage_plot.png"
 
+# converting bytes into GB
+gpu_mem_usage_gb = gpu_mem_usage / 1e9
+model_size_gb = model_size / 1e9
 
+# Stats 
+avg_gpu = np.mean(gpu_mem_usage_gb)
+std_gpu = np.std(gpu_mem_usage_gb,ddof=1)/np.sqrt(len(gpu_mem_usage_gb))
+stats_gpu = f"Avg_total:{avg_gpu:.1f} GB; sigma_total:{std_gpu:.2f} GB\n"
+model_size = f"\nModel size: {model_size_gb:.1f} GB"
 
+plt.figure()
+plt.plot(epochs, gpu_mem_usage_gb)
+plt.xlabel("Epoch")
+plt.ylabel("Peak GPU memory (GB)")
+plt.title(f"GPU peak memory usage per epoch: {sys.argv[1]}")
+plt.annotate(stats_gpu+model_size, (0.01, 0.5), xycoords="axes fraction")
+plt.tight_layout()
+plt.savefig(save_path_gpu)
+plt.close()
 
 """
 

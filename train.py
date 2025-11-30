@@ -231,15 +231,17 @@ while epoch < params.num_epochs:
         else:
             validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable)
         np.save(results_path / "validation_metrics.npy", validation_metrics)
-        dice = validation_metrics[epoch,0]
-        best_epoch = dice > best_val_dice
-        if(best_epoch): best_val_dice = dice
-        plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, params.net)
         
         # Save validation time
         val_end = time.time()
         val_times[epoch] = val_end - val_start
         np.save(results_path / "val_times.npy", val_times)
+
+        dice = validation_metrics[epoch,0]
+        best_epoch = dice > best_val_dice
+        if(best_epoch): best_val_dice = dice
+        plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, params.net)
+        
             
     checkpoint = {
         'best_dice': best_val_dice,
