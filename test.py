@@ -125,6 +125,7 @@ plt.legend()
 plt.tight_layout()
 plt.savefig(save_path_times)
 #plt.show()
+plt.close()
 
 # GPU plot
 save_path_gpu = results_path / "gpu_mem_usage_plot.png"
