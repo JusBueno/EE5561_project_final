@@ -69,6 +69,24 @@ if resume_training and epoch_times_file.exists():
 else:
     epoch_times = np.zeros(params.num_epochs)
 
+train_times_file = results_path / "train_times.npy"
+if resume_training and train_times_file.exists():
+    train_times = np.load(train_times_file)
+else:
+    train_times = np.zeros(params.num_epochs)
+
+val_times_file = results_path / "val_times.npy"
+if resume_training and val_times_file.exists():
+    val_times = np.load(val_times_file)
+else:
+    val_times = np.zeros(params.num_epochs)
+
+gpu_mem_file = results_path / "gpu_memory_usage.npy"
+if resume_training and gpu_mem_file.exists():
+    gpu_memory_usage = np.load(gpu_mem_file)
+else:
+    gpu_memory_usage = np.zeros(params.num_epochs)
+
 
 #=========== SETUP DATASETS AND DATA LOADERS ===============
 
@@ -121,6 +139,22 @@ if torch.cuda.device_count() >= 2:
     model = nn.DataParallel(model)  
     print(f"Parallel training with {torch.cuda.device_count()} GPUs")
 
+
+# Estimate network size
+if isinstance(model, nn.DataParallel):
+    model_to_size = model.module
+else:
+    model_to_size = model
+param_size = sum(p.numel() * p.element_size() for p in model_to_size.parameters())
+buffer_size = sum(b.numel() * b.element_size() for b in model_to_size.buffers())
+model_size_bytes = param_size + buffer_size
+
+print(f"Model size: {model_size_bytes:.4f} bytes")
+
+with open(results_path / "model_size_bytes.txt", "w") as f:
+    f.write(f"{model_size_bytes:.4f}\n")
+
+
 if params.net in ["REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]:
     criterion = CombinedLoss(VAE_enable = params.VAE_enable, separate = True, logvar_out=True)
 else:
@@ -129,7 +163,6 @@ else:
 optimizer = torch.optim.Adam(model.parameters(), lr = params.learning_rate, weight_decay = 1e-5)
 lr_lambda = lambda epoch: (1 - epoch / params.num_epochs) ** 0.9
 scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
-
 
 
 if resume_training: #Load existing params
@@ -152,9 +185,14 @@ while epoch < params.num_epochs:
 
     epoch_start = time.time()
 
+    # Reset memory stats
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats()
+
     model.train()
     train_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{params.num_epochs} [Training]")
 
+    train_start = time.time() # To measure train time only
     for out_imgs, inp_imgs, mask in train_bar:
         optimizer.zero_grad()
         if params.net == "VAE_2D":
@@ -180,8 +218,14 @@ while epoch < params.num_epochs:
     training_metrics[epoch,:] = training_metrics[epoch,:] / len(train_bar)
     np.save(results_path / "training_metrics.npy", training_metrics)
 
+    # Save train time
+    train_end = time.time()
+    train_times[epoch] = train_end - train_start
+    np.save(results_path / "train_times.npy", train_times)
+
     #---Validation    
     if(params.validation):
+        val_start = time.time() # To measure validation time
         if params.net in ["REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]:
             validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable, logvar_out=True)
         else:
@@ -191,7 +235,11 @@ while epoch < params.num_epochs:
         best_epoch = dice > best_val_dice
         if(best_epoch): best_val_dice = dice
         plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, params.net)
-
+        
+        # Save validation time
+        val_end = time.time()
+        val_times[epoch] = val_end - val_start
+        np.save(results_path / "val_times.npy", val_times)
             
     checkpoint = {
         'best_dice': best_val_dice,
@@ -208,6 +256,11 @@ while epoch < params.num_epochs:
     if(best_epoch and params.save_model_each_epoch):
         torch.save(checkpoint, results_path / "best_checkpoint.pth.tar")
         plot_examples(model, val_dataset, range(10), results_path, params.net, VAE_enable = params.VAE_enable)
+
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+        gpu_memory_usage[epoch] = torch.cuda.max_memory_allocated()
+        np.save(results_path / "gpu_memory_usage.npy", gpu_memory_usage)
 
     epoch_end = time.time()
     epoch_times[epoch] = epoch_end - epoch_start
