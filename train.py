@@ -33,12 +33,13 @@ if resume_training: #Load existing params
     checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
     validation_metrics = np.load(results_path / "validation_metrics.npy")
     training_metrics = np.load(results_path / "training_metrics.npy")
-    best_val_dice = validation_metrics.max(axis=0)[0]
+    best_val_dice = validation_metrics.min(axis=0)[0]
 else:
     #Initialize training parameters
     params = Training_Parameters(
         net=args.net,
         VAE_enable=args.VAE_enable,
+        UNET_enable=args.UNET_enable,
         num_epochs=args.num_epochs,
         LR=args.LR,
         batch=args.batch,
@@ -46,6 +47,7 @@ else:
         downsamp_type=args.downsamp_type,
         ds_ratio=args.ds_ratio,
         crop = args.crop,
+        VAE_warmup = args.VAE_warmup,
         fusion = args.fusion
     )
     params.batch_size *= torch.cuda.device_count() # If parallel training
@@ -62,7 +64,6 @@ if device == "cpu":
     print("Warning: Running on CPU")
     
 data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
-
 
 epoch_times_file = results_path / "epoch_times.npy"
 if resume_training and epoch_times_file.exists():
@@ -113,13 +114,9 @@ inChans = 4; seg_outChans = 3
 input_shape = dataset.input_dim
 output_shape = dataset.output_dim
 
-#With VAE branch
-if params.net == "VAE_2D":
-    model = VAE_UNET(params.slab_dim, input_dim=dataset.input_dim, HR_dim=dataset.output_dim)
-elif params.net == "UNET_2D":
-    model = UNET(params.slab_dim)
-elif params.net == "REF":
-    model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear')
+
+if params.net == "REF":
+    model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, params.UNET_enable, mode='trilinear')
 elif params.net == "MOD_01":
     model = NvNet_MOD01(inChans, output_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, mode='trilinear', HR_layers = params.HR_layers)
 elif params.net == "MOD_02":
@@ -155,11 +152,14 @@ print(f"Model size: {model_size_bytes:.4f} bytes")
 with open(results_path / "model_size_bytes.txt", "w") as f:
     f.write(f"{model_size_bytes:.4f}\n")
 
+if params.VAE_warmup:
+    VAE_annealer = Annealer(100, shape = 'cosine')
+else: VAE_annealer = None
 
 if params.net in ["REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]:
     criterion = CombinedLoss(VAE_enable = params.VAE_enable, separate = True, logvar_out=True)
 else:
-    criterion = CombinedLoss(VAE_enable = params.VAE_enable, separate = True)
+    criterion = CombinedLoss(VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable, separate = True, annealer = VAE_annealer)
 
 optimizer = torch.optim.Adam(model.parameters(), lr = params.learning_rate, weight_decay = 1e-5)
 lr_lambda = lambda epoch: (1 - epoch / params.num_epochs) ** 0.9
@@ -178,8 +178,6 @@ else:
 
 
 #=========== TRAINING LOOP ===============
-
-
 best_epoch = True
 
 while epoch < params.num_epochs:
@@ -195,24 +193,23 @@ while epoch < params.num_epochs:
 
     train_start = time.time() # To measure train time only
     for out_imgs, inp_imgs, mask in train_bar:
-        optimizer.zero_grad()
-        if params.net == "VAE_2D":
-            central_index = params.slab_dim//2
-            central_slice = out_imgs[:,central_index,:,:].unsqueeze(1) #Get central slice for VAE output
-            seg_out, vae_out, mu, logvar = model(inp_imgs)
-            combined_loss = criterion(seg_out, mask, vae_out, central_slice, mu, logvar)
-        elif params.net == "UNET_2D":
-            seg_out = model(inp_imgs)
-            combined_loss = criterion(seg_out, mask)
-        elif params.net in ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US", "VAE_M01", "VAE_M04"]:
-            seg_pred, rec_pred, y_mid = model(inp_imgs)
-            combined_loss, dice_loss, l2_loss, kl_div = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
-            training_metrics[epoch,0] += dice_loss
-            training_metrics[epoch,1] += l2_loss
-            training_metrics[epoch,2] += kl_div
 
+        print(out_imgs.shape)
+        print(inp_imgs.shape)
+        print(mask.shape)
+
+        seg_pred, rec_pred, y_mid = model(inp_imgs)
+        combined_loss, dice_loss, l2_loss, kl_div = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
+        training_metrics[epoch,0] += dice_loss
+        training_metrics[epoch,1] += l2_loss
+        training_metrics[epoch,2] += kl_div
+
+        optimizer.zero_grad()
         combined_loss.backward()
         optimizer.step()
+
+        if params.VAE_warmup:
+            criterion.annealer.step()
 
         train_bar.set_postfix(loss=combined_loss.item())
     
@@ -224,13 +221,13 @@ while epoch < params.num_epochs:
     train_times[epoch] = train_end - train_start
     np.save(results_path / "train_times.npy", train_times)
 
-    #---Validation    
+    #---Validation
     if(params.validation):
         val_start = time.time() # To measure validation time
         if params.net in ["REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]:
-            validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable, logvar_out=True)
+            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable, logvar_out=True)
         else:
-            validation_metrics[epoch,:] = test_model(model, val_loader, params.net, VAE_enable = params.VAE_enable)
+            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable)
         np.save(results_path / "validation_metrics.npy", validation_metrics)
         
         # Save validation time
@@ -241,7 +238,7 @@ while epoch < params.num_epochs:
         dice = validation_metrics[epoch,0]
         best_epoch = dice > best_val_dice
         if(best_epoch): best_val_dice = dice
-        plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, params.net)
+        plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, params.UNET_enable, params.net)
         
             
     checkpoint = {
@@ -255,10 +252,10 @@ while epoch < params.num_epochs:
      #---Logging model checkpoint 
     if(params.save_model_each_epoch):
         torch.save(checkpoint, results_path / "checkpoint.pth.tar")
-        
-    if(best_epoch and params.save_model_each_epoch):
+    
+    if(not params.UNET_enable or (best_epoch and params.save_model_each_epoch)):
         torch.save(checkpoint, results_path / "best_checkpoint.pth.tar")
-        plot_examples(model, val_dataset, range(10), results_path, params.net, VAE_enable = params.VAE_enable)
+        plot_examples(model, val_dataset, range(10), results_path, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable, threeD = params.threeD)
 
     if device.type == "cuda":
         torch.cuda.synchronize()
