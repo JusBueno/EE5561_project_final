@@ -74,7 +74,7 @@ class CombinedLoss(_Loss):
     As default: k1=0.1, k2=0.1
     Accepts either 5 inputs (if using VAE) or 2 (if not using VAE)
     '''
-    def __init__(self, k1=0.1, k2=0.1,VAE_enable=True, UNET_enable = True, separate = False, logvar_out=False, annealer = None):
+    def __init__(self, k1=0.1, k2=0.1, VAE_enable=True, UNET_enable = True, separate = False, logvar_out=False, annealer = None):
         super(CombinedLoss, self).__init__()
         self.k1 = k1
         self.k2 = k2
