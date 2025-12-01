@@ -41,7 +41,7 @@ def dwt_1d(sig, levels, scaling_function, wavelet_function):
             break
     return X
 
-def img_wavelet(img):
+def img_wavelet(img, factor):
     ''' Returns 1st level "Blur" 2d wavelet of img.
     The output is downsized by 2 if dimesion is even.
     If it is odd, output dimension is downsized by 2 and
@@ -71,7 +71,7 @@ def img_wavelet(img):
     
     return img_col_dwt
 
-def img_wavelet_3d(img):
+def img_wavelet_3d(img, factor):
     ''' Returns 1st level "Blur" 3d wavelet of img.
     The output is downsized by 2 if dimesion is even.
     If it is odd, output dimension is downsized by 2 and

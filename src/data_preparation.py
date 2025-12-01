@@ -7,6 +7,8 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 from scipy import ndimage
 from src.random_crop_fun import crop_3d
+from src.img_wavelet import img_wavelet, img_wavelet_3d
+from downsample import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -27,7 +29,7 @@ class BRATS_dataset(Dataset):
         self.downsamp_type = params.downsamp_type
         self.augment = params.augment
         self.binary_mask = params.binary_mask
-        self.volume_dim = params.volume_dim
+        self.threeD = params.threeD
         self.modality_index = params.modality_index
         self.crop = params.crop
         self.crop_size = params.crop_size
@@ -82,7 +84,31 @@ class BRATS_dataset(Dataset):
         ds = 1 / float(self.ds_ratio)
         order = 3 if self.downsamp_type == "bicubic" else 1
         return ndimage.zoom(img, (ds, ds, ds), order=order)
+    
+    def downsize(self, img):
+        Nc, Nd, Nx, Ny = img.shape
+        d = self.ds_ratio
+        s = self.downsamp_type
 
+        #If 3D, downsample the whole volume
+        if self.threeD:
+            img_ds = np.zeros([Nc, Nd//d, Nx//d, Ny//d], dtype=img.dtype)
+            for i in range(Nc):
+                if(s == "bicubic"): img_ds[i] = ndimage.zoom(img[i], (d, d, d), order=3)
+                if(s == "bilinear"): img_ds[i] = ndimage.zoom(img[i], (d, d, d), order=1)
+                if(s == "wavelet"): img_ds[i] = img_wavelet_3d(img[i], d)
+                if(s == "ds"): img_ds[i] = downsample_3d(img[i], d)
+                if(s == "ds_filter"): img_ds[i] = filter_downsample_3d(img[i], d)
+        #If 2D, downsample each slice individually
+        else:
+            img_ds = np.zeros([Nc, Nd, Nx//d, Ny//d], dtype=img.dtype)
+            for i in range(Nc):
+                for j in range(Nd):
+                    if(s == "bicubic"): img_ds[i,j] = ndimage.zoom(img[i,j], (d, d, d), order=3)
+                    if(s == "bilinear"): img_ds[i,j] = ndimage.zoom(img[i,j], (d, d, d), order=1)
+                    if(s == "wavelet"): img_ds[i,j] = img_wavelet_3d(img[i,j], d)
+                    if(s == "ds"): img_ds[i,j] = downsample_3d(img[i,j], d)
+                    if(s == "ds_filter"): img_ds[i,j] = filter_downsample_3d(img[i,j], d)
 
     def augment_pair(self, imgs, mask):
         """
@@ -153,21 +179,16 @@ class BRATS_dataset(Dataset):
         if self.crop:
             imgs, mask = crop_3d(imgs, mask, self.crop_size, fixed=self.fixed_crop)
 
-        #imgs_ds = self.downsize(imgs)
-        imgs_ds = imgs
+        imgs_ds = self.downsize(imgs)
 
         imgs = torch.tensor(imgs, dtype=torch.float32, device=self.device)
         imgs_ds = torch.tensor(imgs_ds, dtype=torch.float32, device=self.device)
         mask = torch.tensor(mask, dtype=torch.float32, device=self.device)
 
-        # Full-volume mode
-        if self.volume_dim:
-            return imgs, imgs_ds, mask
-
-        # # Single-modality mode
-        # if self.modality_index is not None:
-        #     mid = self.modality_index
-        #     mask_mid = mask_t[:, self.slab_dim // 2]  # 2D center slice
-        #     return imgs_t[mid], imgs_ds_t[mid], mask_mid
-
-        raise RuntimeError("Dataset configuration is incomplete.")
+        if not self.threeD:
+            Nc, Nz1 = imgs.shape[0:2]
+            Nc, Nz2 = imgs_ds.shape[0:2]
+            imgs = imgs.view(Nc*Nz1,-1,-1)
+            imgs_ds = imgs_ds.view(Nc*Nz2,-1,-1)
+        
+        return imgs, imgs_ds, mask

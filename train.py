@@ -45,7 +45,8 @@ else:
         degradation_type=args.degradation_type,
         downsamp_type=args.downsamp_type,
         ds_ratio=args.ds_ratio,
-        crop = args.crop
+        crop = args.crop,
+        fusion = args.fusion
     )
     params.batch_size *= torch.cuda.device_count() # If parallel training
     #Save the parameters to keep track of what we ran

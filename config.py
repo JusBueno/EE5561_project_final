@@ -40,10 +40,17 @@ def parse_args():
 
     parser.add_argument("--ds_ratio", type=int, default=1,
                         help="Downsampling ratio (default: 1)")
+
+    parser.add_argument("--fusion", type=str, default="None",
+                        help="Downsampling ratio (default: 1)")
     
     parser.add_argument("--crop", action="store_true")
     parser.add_argument("--no_crop", action="store_false", dest="crop")
     parser.set_defaults(crop=False)
+
+    parser.add_argument("--UNET_enable", action="store_true")
+    parser.add_argument("--UNET_disable", action="store_false", dest="UNET_enable")
+    parser.set_defaults(UNET_enable=True)
 
     return parser.parse_args()
 
@@ -54,7 +61,8 @@ class Training_Parameters:
         
         #Choose a network
         possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]
-        
+        fusion_types = ["None", "Slab", "Modality", "Hybrid"]
+
         self.net = net
         self.VAE_enable = VAE_enable
 
@@ -76,7 +84,7 @@ class Training_Parameters:
         
         
         #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
-        self.volume_dim = True #Use volume dimension
+        self.threeD = True #Use volume dimension
         self.slab_dim = 144
         self.slabs_per_volume = 1
         self.num_volumes = 369  #Maximum = 369 for the training dataset
