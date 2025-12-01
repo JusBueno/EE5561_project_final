@@ -237,7 +237,7 @@ class VAE(nn.Module):
 
 
 class NvNet(nn.Module):
-    def __init__(self, inChans, input_shape, seg_outChans, activation, normalizaiton, VAE_enable, mode):
+    def __init__(self, inChans, input_shape, seg_outChans, activation, normalizaiton, VAE_enable, UNET_enable, mode):
         super(NvNet, self).__init__()
         
         # some critical parameters
@@ -248,6 +248,7 @@ class NvNet(nn.Module):
         self.normalizaiton = normalizaiton
         self.mode = mode
         self.VAE_enable = VAE_enable
+        self.UNET_enable = UNET_enable
         
         # Encoder Blocks
         self.in_conv0 = DownSampling(inChans=self.inChans, outChans=32, stride=1,dropout_rate=0.2)
@@ -289,14 +290,16 @@ class NvNet(nn.Module):
                     self.en_block3_0(
                         self.en_down3(out_en2)))))
         
-        out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
-        out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
-        out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
-        out_end = self.de_end(out_de0)
+        if(self.UNET_enable):
+            out_de2 = self.de_block2(self.de_up2(out_en3, out_en2))
+            out_de1 = self.de_block1(self.de_up1(out_de2, out_en1))
+            out_de0 = self.de_block0(self.de_up0(out_de1, out_en0))
+            out_end = self.de_end(out_de0)
+        else: out_end = 0
         
         if self.VAE_enable:
             out_vae, out_distr = self.vae(out_en3)
-            out_final = torch.cat((out_end, out_vae), 1)
-            return out_end, out_vae, out_distr
-        
-        return out_end, 0, 0
+        else: out_vae = out_distr = 0
+
+        return out_end, out_vae, out_distr
+
