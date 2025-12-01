@@ -76,7 +76,7 @@ class Training_Parameters:
         self.num_epochs = num_epochs    
         self.learning_rate = LR
         self.batch_size = batch
-        self.train_ratio = 0.5            #What ratio of dataset for training (Training ratio = 1 - validation ratio)
+        self.train_ratio = 0.8           #What ratio of dataset for training (Training ratio = 1 - validation ratio)
         self.validation = True              #Whether you want validation each epoch
         self.save_model_each_epoch = True   #Save model and training parameters every epoch
         self.crop = crop
@@ -92,7 +92,7 @@ class Training_Parameters:
         self.threeD = self.net in ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US"] #Use volume dimension
         self.slab_dim = 144
         self.slabs_per_volume = 1
-        self.num_volumes = 2  #Maximum = 369 for the training dataset
+        self.num_volumes = 369  #Maximum = 369 for the training dataset
         self.data_shape = [240,240,155] #Original data shape [Height x Width x Depth]
         self.crop_size = [self.slab_dim,240,240] #Used data shape [Depth x Height x Width]
         self.modality_index = 0 #If single modality, which one to choose
