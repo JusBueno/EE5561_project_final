@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 from scipy import ndimage
 from src.random_crop_fun import crop_3d
 from src.img_wavelet import img_wavelet, img_wavelet_3d
-from downsample import *
+from src.downsample import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -45,6 +45,8 @@ class BRATS_dataset(Dataset):
             self.output_dim = [3] + self.crop_size
             self.input_dim  = [4] + [n//self.ds_ratio for n in self.crop_size]
 
+
+
         # Compute slabs per volume
         max_slabs = self.data_shape[2] - 2*(self.slab_dim//2)
         self.slabs_per_volume = min(params.slabs_per_volume, max_slabs)
@@ -80,22 +82,19 @@ class BRATS_dataset(Dataset):
         return data
 
 
-    def downsize(self, img):
-        ds = 1 / float(self.ds_ratio)
-        order = 3 if self.downsamp_type == "bicubic" else 1
-        return ndimage.zoom(img, (ds, ds, ds), order=order)
     
     def downsize(self, img):
         Nc, Nd, Nx, Ny = img.shape
         d = self.ds_ratio
+        dinv = 1 / float(d)
         s = self.downsamp_type
 
         #If 3D, downsample the whole volume
         if self.threeD:
             img_ds = np.zeros([Nc, Nd//d, Nx//d, Ny//d], dtype=img.dtype)
             for i in range(Nc):
-                if(s == "bicubic"): img_ds[i] = ndimage.zoom(img[i], (d, d, d), order=3)
-                if(s == "bilinear"): img_ds[i] = ndimage.zoom(img[i], (d, d, d), order=1)
+                if(s == "bicubic"): img_ds[i] = ndimage.zoom(img[i], (dinv, dinv, dinv), order=3)
+                if(s == "bilinear"): img_ds[i] = ndimage.zoom(img[i], (dinv, dinv, dinv), order=1)
                 if(s == "wavelet"): img_ds[i] = img_wavelet_3d(img[i], d)
                 if(s == "ds"): img_ds[i] = downsample_3d(img[i], d)
                 if(s == "ds_filter"): img_ds[i] = filter_downsample_3d(img[i], d)
@@ -104,11 +103,13 @@ class BRATS_dataset(Dataset):
             img_ds = np.zeros([Nc, Nd, Nx//d, Ny//d], dtype=img.dtype)
             for i in range(Nc):
                 for j in range(Nd):
-                    if(s == "bicubic"): img_ds[i,j] = ndimage.zoom(img[i,j], (d, d, d), order=3)
-                    if(s == "bilinear"): img_ds[i,j] = ndimage.zoom(img[i,j], (d, d, d), order=1)
-                    if(s == "wavelet"): img_ds[i,j] = img_wavelet_3d(img[i,j], d)
-                    if(s == "ds"): img_ds[i,j] = downsample_3d(img[i,j], d)
-                    if(s == "ds_filter"): img_ds[i,j] = filter_downsample_3d(img[i,j], d)
+                    if(s == "bicubic"): img_ds[i,j] = ndimage.zoom(img[i,j], (dinv, dinv), order=3)
+                    if(s == "bilinear"): img_ds[i,j] = ndimage.zoom(img[i,j], (dinv, dinv), order=1)
+                    if(s == "wavelet"): img_ds[i,j] = img_wavelet(img[i,j], d)
+                    if(s == "ds"): img_ds[i,j] = downsample_2d(img[i,j], d)
+                    if(s == "ds_filter"): img_ds[i,j] = filter_downsample_2d(img[i,j], d)
+        return img_ds
+    
 
     def augment_pair(self, imgs, mask):
         """
@@ -154,7 +155,7 @@ class BRATS_dataset(Dataset):
         # Explicit mask detect
         mask_file = [f for f in files if "seg" in f.name.lower()][0]
         mask = nib.load(mask_file).get_fdata()
-        mask = mask.transpose(2, 0, 1)
+        mask = mask[:,:,sl].transpose(2, 0, 1)
 
         # All non-mask modalities
         vol_files = [f for f in files if "seg" not in f.name.lower()]
@@ -186,9 +187,10 @@ class BRATS_dataset(Dataset):
         mask = torch.tensor(mask, dtype=torch.float32, device=self.device)
 
         if not self.threeD:
-            Nc, Nz1 = imgs.shape[0:2]
-            Nc, Nz2 = imgs_ds.shape[0:2]
-            imgs = imgs.view(Nc*Nz1,-1,-1)
-            imgs_ds = imgs_ds.view(Nc*Nz2,-1,-1)
+            Nc, Nz, Nx, Ny = imgs.shape
+            Nc, Nz2, Nx2, Ny2 = imgs_ds.shape
+            imgs = imgs.view(Nc*Nz,Nx,Ny)
+            imgs_ds = imgs_ds.view(Nc*Nz2,Nx2,Ny2)
+            mask = mask[:,mask.shape[1]//2,:,:]
         
         return imgs, imgs_ds, mask
