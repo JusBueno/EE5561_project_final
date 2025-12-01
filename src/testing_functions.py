@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from src.criterion import *
 
 
-def test_model(model, test_loader, net_type, VAE_enable = True, UNET_enable = True, logvar_out=False):
+def test_model(model, test_loader, VAE_enable = True, UNET_enable = True, logvar_out=False):
     """
     Testing function for the model
     model: model to be tested
@@ -42,21 +42,13 @@ def test_model(model, test_loader, net_type, VAE_enable = True, UNET_enable = Tr
     
     return metrics
 
-def bin_mask_2_multi(mask):
-    mask_temp = torch.round(mask)
-    num_classes = 3
-    multi_mask = torch.zeros(mask.shape[1:3])
-    for i in range(num_classes):
-        multi_mask[mask_temp[i,:,:]==1] = i
-    return multi_mask.squeeze()
+
     
-    
-def plot_examples(model, test_dataset, slices, save_path, net_type, VAE_enable = True, UNET_enable = True):
+def plot_examples(model, test_dataset, slices, save_path, VAE_enable = True, UNET_enable = True, threeD = True):
     
     model.eval()
     print("Plotting results" + "-"*60)
     
-    kl_loss_ref = CustomKLLoss() #KL divergence from the github repo
     MSE_loss = nn.MSELoss()
     fs = 16 #fontsize
     
@@ -74,6 +66,14 @@ def plot_examples(model, test_dataset, slices, save_path, net_type, VAE_enable =
             inp_img = inp_img.unsqueeze(0)
             
             seg_out, rec_pred, _ = model(inp_img)
+
+            if not threeD:
+                mask = mask.unsqueeze(2)
+                seg_out = seg_out.unsqueeze(2)
+                inp_img = inp_img.view(1, 4, inp_img.shape[1]//4, inp_img.shape[2], inp_img.shape[3])
+                out_img = out_img.view(1, 4, out_img.shape[1]//4, out_img.shape[2], out_img.shape[3])
+                if VAE_enable:
+                    rec_pred = rec_pred.view(1, 4, rec_pred.shape[1]//4, rec_pred.shape[2], rec_pred.shape[3])
             
             HR_image = out_img[0,0,out_img.shape[2]//2,:,:].squeeze()
             degrad_image = inp_img[0,0,inp_img.shape[2]//2,:,:].squeeze()
@@ -177,7 +177,7 @@ def plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, 
             ax[i].grid()
         
         ax[2].legend(fontsize = 10)
-        fig.suptitle(f"Network: {net_type}, VAE is {VAE_enable}, \n best DICE coeff = {best_val_dice:.3f}", fontsize=13)
+        fig.suptitle(f"Network: {net_type}, VAE is {VAE_enable},\nbest DICE coeff = {best_val_dice:.3f}", fontsize=13)
     
     if VAE_enable and not UNET_enable:
         fig,  ax = plt.subplots(1,2,figsize = (6,3.5))
@@ -201,7 +201,7 @@ def plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, 
         ax.set_xlabel("Epochs", fontsize = 13)
         ax.set_ylabel("Dice loss", fontsize = 13)
         ax.legend(fontsize = 10)
-        ax.set_title(f"Network: {net_type}, VAE is {VAE_enable}, \n best DICE coeff = {best_val_dice:.3f}", fontsize=13)
+        ax.set_title(f"Network: {net_type}, VAE is {VAE_enable}, \nbest DICE coeff = {best_val_dice:.3f}", fontsize=13)
         ax.grid()
 
     fig.tight_layout()
