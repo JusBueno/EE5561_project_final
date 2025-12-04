@@ -194,10 +194,6 @@ while epoch < params.num_epochs:
     train_start = time.time() # To measure train time only
     for out_imgs, inp_imgs, mask in train_bar:
 
-        print(out_imgs.shape)
-        print(inp_imgs.shape)
-        print(mask.shape)
-
         seg_pred, rec_pred, y_mid = model(inp_imgs)
         combined_loss, dice_loss, l2_loss, kl_div = criterion(seg_pred, mask, rec_pred, out_imgs, y_mid)
         training_metrics[epoch,0] += dice_loss

@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument("--degradation_type", type=str, default="downsampling",
                         help="Degradation type (default: downsampling)")
 
-    parser.add_argument("--downsamp_type", type=str, default="wavelet",
+    parser.add_argument("--downsamp_type", type=str, default="bilinear",
                         help="Downsampling type (default: bilinear)")
 
     parser.add_argument("--ds_ratio", type=int, default=1,
@@ -63,7 +63,7 @@ class Training_Parameters:
                  downsamp_type = 'bilinear', ds_ratio = 1, crop = True, VAE_warmup = False, fusion = "None"):
         
         #Choose a network
-        possible_nets = ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]
+        possible_nets = ["REF_US", "VAE_M01", "VAE_2D"]
         fusion_types = ["None", "Slab", "Modality", "Hybrid"]
 
         self.net = net
@@ -89,7 +89,7 @@ class Training_Parameters:
         
         
         #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
-        self.threeD = self.net in ["REF", "MOD_01", "MOD_02", "MOD_03", "REF_US"] #Use volume dimension
+        self.threeD = self.net in ["REF_US", "VAE_M01"] #Use volume dimension
         self.slab_dim = 144
         self.slabs_per_volume = 1
         self.num_volumes = 369  #Maximum = 369 for the training dataset
