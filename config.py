@@ -61,20 +61,20 @@ class Configs:
         possible_nets = ["REF", "REF_US", "VAE_3D", "VAE_2D"]
 
         # Additional derived config values
-        cfg.train_ratio = 0.8
+        cfg.train_ratio = 0.5
         cfg.validation = True
         cfg.save_model_each_epoch = True
         cfg.HR_layers = int(np.log2(cfg.ds_ratio)) if cfg.ds_ratio > 0 else 0
 
         cfg.threeD = cfg.net in ["REF", "REF_US", "VAE_3D"]
-        cfg.logvar = cfg.net in ["VAE_2D", "REF_US", "VAE_3D"]
+        cfg.logvar_out = cfg.net in ["VAE_2D", "REF_US", "VAE_3D"]
         cfg.data_shape = [155, 240, 240]
         cfg.crop_size = [cfg.slab_dim, 160, 224]
         cfg.modality_index = 0
         cfg.augment = True
         cfg.binary_mask = False
         cfg.slabs_per_volume = 1 if cfg.threeD else 10
-        cfg.num_volumes = 369
+        cfg.num_volumes = 2
 
         if cfg.net not in possible_nets:
             sys.exit(f"Error: network '{cfg.net}' is not implemented.")
