@@ -37,12 +37,12 @@ class BRATS_dataset(Dataset):
 
 
         # Compute slabs per volume
-        max_slabs = self.params.data_shape[2] - 2*(self.params.slab_dim//2)
+        max_slabs = self.params.data_shape[0] - 2*(self.params.slab_dim//2)
         self.slabs_per_volume = min(self.params.slabs_per_volume, max_slabs)
 
         # Slice index list
         self.slice_indices = [
-            ((i+1) * self.params.data_shape[2]) // (self.params.slabs_per_volume + 1)
+            ((i+1) * self.params.data_shape[0]) // (self.params.slabs_per_volume + 1)
             for i in range(self.params.slabs_per_volume)
         ]
 
