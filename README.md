@@ -19,11 +19,11 @@ folder : Name or path of the folder where the training session will be saved.
 
 **Optional arguments:**
 
+**System Controls**
+
 --resume or --start_new : Whether to resume training from existing checkpoint. Default is --resume
 
---net : Network type to use. Default is "REF".
-
---VAE_enable or --VAE_disable : Whether to use the VAE. Default it --VAE_enable 
+--net : Network type to use. Default is "REF_US". Options are [REF_US, VAE_3D, VAE_2D]
 
 --num_epochs : Number of epochs to train. Default is 300.
 
@@ -31,11 +31,32 @@ folder : Name or path of the folder where the training session will be saved.
 
 --batch : Batch size. Default is 1.
 
---degradation_type : Type of image degradation to apply. Default is "downsampling".
+**Cropping**
+--crop or --no_crop : Whether to crop the images. Default is True
 
---downsamp_type : Type of downsampling interpolation. Default is "bilinear".
+**VAE-Related**
+--VAE_enable or --VAE_disable : Whether to use the VAE. Default it --VAE_enable 
 
---ds_ratio : Downsampling ratio. Default is 1.
+--VAE_warmup : Activates VAE weight scheduling. Default is deactivated
+
+--k1 : Reconstruction weight. Default is 0.1
+--k2 : KL divergence weight. Default is 0.1
+
+**Downsizing techniques**
+
+--downsamp_type : Type of downsampling interpolation. Default is "bilinear". Options are [bilinear, bicubic, wavelet, ds_filter, ds]
+
+--ds_ratio : Downsampling ratio. Default is 1. Options are [1,2,4]
+
+
+**2.5D parameters**
+
+--slab_dim : Number of slices. Default is 144. Must specify for 2D, for which options are [3,5,7,9]. Should be fixed to default when 3D
+
+--fusion : 2D Fusion type. Default is None. Options are [None, Slab, Modality, Hybrid]
+
+
+
 
 
 **Examples:**
@@ -68,7 +89,128 @@ python train.py MOD_02_TEST_01 --start_new --net MOD_02 --VAE_enable --ds_ratio 
 python train.py MOD_02_TEST_02 --start_new --net MOD_02 --VAE_disable --ds_ratio 2
 `
 
+New training session using REF_US network with VAE, saved in a folder named REF_US_TEST_01
+`
+python train.py REF_US_TEST_01 --start_new --net REF_US --VAE_enable 
+`
+
+Resume training session using VAE_3D network with VAE, learning rate of 1e-5, reconstruction weight of 0.01, KL weight of 0.001, saved in a folder named VAE_3D_TEST_01
+`
+python train.py VAE_3D_TEST_01 --resume --net VAE_3D --VAE_enable --LR 0.00001 --k1 0.01 --k2 0.001 
+`
+
+Resume training session using VAE_2D network without VAE, downsampling with wavelet x4, with slab fusion, 5 slices saved in a folder named VAE_2D_TEST_63
+`
+python train.py VAE_3D_TEST_01 --resume --net VAE_2D --VAE_disabled --downsamp_type wavelet --ds_ratio 4 --fusion Slab --slab_dim 5 
+`
+
+New training session using VAE_3D network with VAE, with weight scheduling, and without cropping saved in a folder named VAE_3D_TEST_30
+`
+python train.py VAE_3D_TEST_30 --start_new --net VAE_3D --VAE_enable --VAE_warmup --no_crop 
+`
+
 For selecting gpu for execution:
 
 `CUDA_VISIBLE_DEVICES=0`
 
+# Test and Implementation
+
+1. Determine the best performing LR, stop with plateau
+(1) REF_US, LR: 1e-4, with VAE *
+(2) REF_US, LR: 1e-4, without VAE *
+(3) REF_US, LR: 5e-5, with VAE
+(4) REF_US, LR: 5e-5, without VAE
+(5) REF_US, LR: 1e-5, with VAE *
+(6) REF_US, LR: 1e-5, without VAE *
+
+2. Determine the best performing weight schema (use best performing LR)
+(7) REF_US, [1, 0.1, 0.1], with VAE 
+(8) REF_US, [1, 0.1, 0.01], with VAE *
+(9) REF_US, [1, 0.1, 0.001], with VAE *
+(10) REF_US, [1, 0.05, 0.01], with VAE
+(11) REF_US, [1, 0.05, 0.001], with VAE *
+(12) REF_US, [1, 0.05, 0.0001], with VAE
+(13) REF_US, [1, 0.01, 0.001], with VAE
+(14) REF_US, [1, 0.01, 0.0001], with VAE
+
+3. VAE 3D with downsized images - Bilinear x2 - Learning Rate
+(15) VAE_3D, LR: 1e-4, with VAE *
+(16) VAE_3D, LR: 1e-4, without VAE *
+(17) VAE_3D, LR: 5e-5, with VAE 
+(18) VAE_3D, LR: 5e-5, without VAE
+(19) VAE_3D, LR: 1e-5, with VAE
+(20) VAE_3D, LR: 1e-5, without VAE
+
+4. VAE 3D with downsized images - Bilinear x2 - Weight Schema
+(21) VAE_3D, [1, 0.1, 0.1], with VAE *
+(22) VAE_3D, [1, 0.1, 0.01], with VAE *
+(23) VAE_3D, [1, 0.1, 0.001], with VAE * 
+(24) VAE_3D, [1, 0.05, 0.01], with VAE
+(25) VAE_3D, [1, 0.05, 0.001], with VAE *
+(26) VAE_3D, [1, 0.05, 0.0001], with VAE
+(27) VAE_3D, [1, 0.01, 0.001], with VAE
+(28) VAE_3D, [1, 0.01, 0.0001], with VAE
+
+5. VAE 3D with downsized images - Bilinear x2 - Weight Scheduling *
+(29) RECON_W - Linear  0.01 to 0.05 (5 epochs), then constant 0.05
+     KL_W - constant 0 (2 epochs), then Linear 0 - 0.001 (15 epochs), then constant 0.001
+Note: Values can be based on previous results
+
+6. VAE 3D with downsized images (using best LR and Weights, or NO VAE if proved unnecessary to this point) - DS Methods
+(30) Bilinear x2 (Done by this point) * 
+(31) Bilinear x4 * 
+(32) Wavelet x2 *
+(34) Wavelet x4 *
+(35) DS with Filter x2
+(36) DS with Filter x4
+(37) Bicubic x2
+(38) Bicubic x4
+(39) DS x2
+(40) DS x4
+
+7. VAE 2D - Bilinear x2, 5 Slices, None Fusion - LR Exploration
+(41) VAE_2D, LR: 1e-4, with VAE *
+(42) VAE_2D, LR: 1e-4, without VAE *
+(43) VAE_2D, LR: 5e-5, with VAE
+(44) VAE_2D, LR: 5e-5, without VAE
+(45) VAE_2D, LR: 1e-5, with VAE
+(46) VAE_2D, LR: 1e-5, without VAE
+
+8. VAE 2D with downsized images - Bilinear x2, 5 Slices, None Fusion - Weight Schema
+(47) VAE_2D, [1, 0.1, 0.1], with VAE *
+(48) VAE_2D, [1, 0.1, 0.01], with VAE *
+(49) VAE_2D, [1, 0.1, 0.001], with VAE *
+(50) VAE_2D, [1, 0.05, 0.01], with VAE
+(51) VAE_2D, [1, 0.05, 0.001], with VAE *
+(52) VAE_2D, [1, 0.05, 0.0001], with VAE
+(53) VAE_2D, [1, 0.01, 0.001], with VAE
+(54) VAE_2D, [1, 0.01, 0.0001], with VAE
+
+9. VAE 2D with downsized images - Bilinear x2, 5 Slices, None Fusion - Weight Scheduling *
+(55) RECON_W - Linear  0.01 to 0.05 (5 epochs), then constant 0.5
+     KL_W - constant 0 (2 epochs), then Linear 0 - 0.001 (15 epochs), then constant 0.001
+Note: Values can be based on previous results
+
+10. VAE 2D with downsized images - Bilinear x2, 5 Slices - Fusion Schema
+(56) None (done by this point) *
+(57) Slab  *
+(58) Modality *
+(59) Hybrid
+
+11. VAE 2D with downsized images - Bilinear x2 - Slice Number
+(60) 3 *
+(61) 5 (Done by this point) *
+(62) 7 *
+(63) 9
+
+12. VAE 2D with downsized images - DS Methods
+(64) Bilinear x2 (Done by this point) *
+(65) Bilinear x4 *
+(66) Wavelet x2 *
+(67) Wavelet x4 *
+(68) DS with Filter x2
+(69) DS with Filter x4
+(70) Bicubic x2
+(71) Bicubic x4
+(72) DS x2
+(73) DS x4
