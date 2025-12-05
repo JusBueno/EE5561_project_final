@@ -14,6 +14,12 @@ class REF_VAE_UNET_3D(nn.Module):
         self.enc_dim = self.input_dim // 8 # Encoder Output Dimension
         self.VAE_C1 = np.floor((self.enc_dim - 1) / 2) + 1
         
+        # DEBUGGING
+        print("DEBUG")
+        print(self.input_dim)
+        print(self.enc_dim)
+        print(self.VAE_C1)
+
         # Encoder Layers
         self.E1 = nn.Sequential(
             nn.Conv3d(in_channels, 32, kernel_size=3, padding=1),
@@ -156,7 +162,7 @@ class REF_VAE_UNET_3D(nn.Module):
             #mu, logvar = torch.chunk(VAE_out, 2, dim=1)  # split into two 128-sized vectors
             VAE_out = self.VDraw(VAE_out)
             VAE_out = self.VU_1(VAE_out)
-            VAE_out = VAE_out.view(-1, 256, self.enc_dim[0] // 2, self.enc_dim[1] // 2, self.enc_dim[1] // 2)
+            VAE_out = VAE_out.view(-1, 256, self.enc_dim[0] // 2, self.enc_dim[1] // 2, self.enc_dim[2] // 2)
             VAE_out = self.VU_2(VAE_out)
             VAE_out = self.VUp2(VAE_out)
             VAE_out = VAE_out + self.VBlock2(VAE_out)
