@@ -61,7 +61,7 @@ class Configs:
         possible_nets = ["REF", "REF_US", "VAE_3D", "VAE_2D"]
 
         # Additional derived config values
-        cfg.train_ratio = 0.5
+        cfg.train_ratio = 0.8
         cfg.validation = True
         cfg.save_model_each_epoch = True
         cfg.HR_layers = int(np.log2(cfg.ds_ratio)) if cfg.ds_ratio > 0 else 0
@@ -74,7 +74,7 @@ class Configs:
         cfg.augment = True
         cfg.binary_mask = False
         cfg.slabs_per_volume = 1 if cfg.threeD else 10
-        cfg.num_volumes = 2
+        cfg.num_volumes = 369
         cfg.val_patience = 10
 
         if cfg.net not in possible_nets:
