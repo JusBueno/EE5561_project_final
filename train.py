@@ -82,7 +82,7 @@ train_size = int(params.train_ratio * len(dataset))
 val_size = len(dataset) - train_size
 
 # For reproducibility, set a random seed
-g = torch.Generator().manual_seed(42) 
+g = torch.Generator().manual_seed(42)
 train_dataset, val_dataset = random_split(
     dataset, [train_size, val_size], generator=g
 )
@@ -126,14 +126,8 @@ print(f"Model size: {model_size_bytes:.4f} bytes")
 with open(results_path / "model_size_bytes.txt", "w") as f:
     f.write(f"{model_size_bytes:.4f}\n")
 
-if params.VAE_warmup:
-    VAE_annealer = Annealer(100, shape = 'cosine')
-else: VAE_annealer = None
 
-if params.net in ["REF_US", "VAE_M01", "VAE_2D"]:
-    criterion = CombinedLoss(VAE_enable = params.VAE_enable, separate = True, logvar_out=True)
-else:
-    criterion = CombinedLoss(VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable, separate = True, annealer = VAE_annealer)
+criterion = CombinedLoss()
 
 optimizer = torch.optim.Adam(model.parameters(), lr = params.LR, weight_decay = 1e-5)
 lr_lambda = lambda epoch: (1 - epoch / params.num_epochs) ** 0.9
@@ -179,7 +173,8 @@ while epoch < params.num_epochs:
         optimizer.step()
 
         if params.VAE_warmup:
-            criterion.annealer.step()
+            criterion.vae_annealer.step()
+            criterion.recon_annealer.step()
 
         train_bar.set_postfix(loss=combined_loss.item())
     

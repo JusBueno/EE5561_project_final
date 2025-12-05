@@ -17,8 +17,11 @@ class Configs:
         self.parser.add_argument("--LR", type=float, default=1e-4)
         self.parser.add_argument("--batch_size", type=int, default=1)
 
+        # Loss weight parameters
+        self.parser.add_argument("--k1", type=float, default=0.1)
+        self.parser.add_argument("--k2", type=float, default=0.1)
+
         # Downsampling
-        self.parser.add_argument("--degradation_type", type=str, default="downsampling")
         self.parser.add_argument("--downsamp_type", type=str, default="bilinear")
         self.parser.add_argument("--ds_ratio", type=int, default=1)
 
@@ -31,7 +34,7 @@ class Configs:
         # Boolean toggles
         self.parser.add_argument("--crop", action="store_true")
         self.parser.add_argument("--no_crop", action="store_false", dest="crop")
-        self.parser.set_defaults(crop=False)
+        self.parser.set_defaults(crop=True)
 
         self.parser.add_argument("--VAE_enable", action="store_true")
         self.parser.add_argument("--VAE_disable", action="store_false", dest="VAE_enable")
@@ -58,14 +61,15 @@ class Configs:
         possible_nets = ["REF", "REF_US", "VAE_M01", "VAE_2D"]
 
         # Additional derived config values
-        cfg.train_ratio = 0.2
+        cfg.train_ratio = 0.8
         cfg.validation = True
         cfg.save_model_each_epoch = True
         cfg.HR_layers = int(np.log2(cfg.ds_ratio)) if cfg.ds_ratio > 0 else 0
 
         cfg.threeD = cfg.net in ["REF", "REF_US", "VAE_M01"]
-        cfg.data_shape = [240, 240, 155]
-        cfg.crop_size = [cfg.slab_dim, 128, 192]
+        cfg.logvar = cfg.net in ["VAE_2D", "REF_US", "VAE_M01"]
+        cfg.data_shape = [155, 240, 240]
+        cfg.crop_size = [cfg.slab_dim, 160, 224]
         cfg.modality_index = 0
         cfg.augment = True
         cfg.binary_mask = False

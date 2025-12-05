@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn.modules.loss import _Loss
-
+from config import Configs, save_configs
 
 def soft_dice_coeff(pred, target, epsilon=1e-8):
     """
@@ -74,41 +74,40 @@ class CombinedLoss(_Loss):
     As default: k1=0.1, k2=0.1
     Accepts either 5 inputs (if using VAE) or 2 (if not using VAE)
     '''
-    def __init__(self, k1=0.1, k2=0.1, VAE_enable=True, UNET_enable = True, separate = False, logvar_out=False, annealer = None):
+    def __init__(self):
         super(CombinedLoss, self).__init__()
-        self.k1 = k1
-        self.k2 = k2
-        self.dice_loss = SoftDiceLoss()
-        self.l2_loss = nn.MSELoss()
-        if logvar_out:
+        self.params = Configs().parse()
+        
+        if self.params.VAE_warmup:
+            self.kl_annealer = Annealer(17, start_epochs=2)
+            self.recon_annealer = Annealer(5)
+        else: self.kl_annealer = self.recon_annealer = None
+
+        if self.params.logvar_out:
             self.kl_loss = CustomKLLoss_2()
         else:
             self.kl_loss = CustomKLLoss()
-        self.VAE_enable = VAE_enable
-        self.UNET_enable = UNET_enable
-        self.separate = separate
-        self.annealer = annealer
 
-        if not self.UNET_enable:
-            self.k1 = self.k2 = 1
+        self.dice_loss = SoftDiceLoss()
+        self.l2_loss = nn.MSELoss()
 
 
     def forward(self, seg_y_pred, seg_y_true, rec_y_pred = None, rec_y_true = None, y_mid = None):
-        
-        if(self.UNET_enable):
-            dice_loss = self.dice_loss(seg_y_pred, seg_y_true)
-        else: dice_loss = 0
 
-        if(self.VAE_enable):
+        dice_loss = self.dice_loss(seg_y_pred, seg_y_true)
+
+        if(self.params.VAE_enable):
             est_mean, est_std = (y_mid[:, :128], y_mid[:, 128:])
             l2_loss = self.l2_loss(rec_y_pred, rec_y_true)
             kl_div = self.kl_loss(est_mean, est_std)
-            if(self.annealer is not None):
-                kl_div = self.annealer(kl_div)
+            if(self.kl_annealer is not None):
+                kl_div = self.kl_annealer(kl_div)
+            if(self.recon_annealer is not None):
+                l2_loss = self.recon_annealer(l2_loss)
 
         else: l2_loss = kl_div = 0
 
-        combined_loss = dice_loss + self.k1 * l2_loss + self.k2 * kl_div
+        combined_loss = dice_loss + self.params.k1 * l2_loss + self.params.k2 * kl_div
         
         if(self.separate):
             return combined_loss, dice_loss, l2_loss, kl_div 
@@ -143,7 +142,7 @@ class Annealer:
     After each call, the step() function should be called to update the current epoch.
     """
 
-    def __init__(self, total_steps, shape='linear', baseline=0.0, cyclical=False, disable=False):
+    def __init__(self, total_steps, shape='linear', baseline=0.0, cyclical=False, disable=False, start_epochs = 0):
         """
         Parameters:
             total_steps (int): Number of epochs to reach full KL divergence weight.
@@ -154,6 +153,7 @@ class Annealer:
         """
 
         self.current_step = 0
+        self.start_epochs = start_epochs
 
         if shape not in ['linear', 'cosine', 'logistic']:
             raise ValueError("Shape must be one of 'linear', 'cosine', or 'logistic.")
@@ -202,12 +202,16 @@ class Annealer:
 
 
     def _slope(self):
+
+        if self.current_step < self.start_epochs:
+            return 0
+        
         if self.shape == 'linear':
-            y = (self.current_step / self.total_steps)
+            y = ((self.current_step-self.start_epochs) / self.total_steps)
         elif self.shape == 'cosine':
-            y = (math.cos(math.pi * (self.current_step / self.total_steps - 1)) + 1) / 2
+            y = (math.cos(math.pi * ((self.current_step-self.start_epochs) / self.total_steps - 1)) + 1) / 2
         elif self.shape == 'logistic':
-            exponent = ((self.total_steps / 2) - self.current_step)
+            exponent = ((self.total_steps / 2) - (self.current_step-self.start_epochs))
             y = 1 / (1 + math.exp(exponent))
         else:
             y = 1.0
