@@ -101,7 +101,7 @@ if params.net == "REF":
     model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, True, mode='trilinear')
 elif params.net == "REF_US":
     model = REF_VAE_UNET_3D(in_channels=inChans, input_dim=input_shape[-3:], num_classes=4, VAE_enable=params.VAE_enable)
-elif params.net == "VAE_M01":
+elif params.net == "VAE_3D":
     model = VAE_UNET_3D_M01(in_channels=inChans, input_dim=input_shape[-3:], num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
 elif params.net == "VAE_2D":
     model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=input_shape[-2:], num_classes=4, VAE_enable=True, HR_layers=0, fusion=params.fusion)
@@ -190,7 +190,7 @@ while epoch < params.num_epochs:
     #---Validation
     if(params.validation):
         val_start = time.time() # To measure validation time
-        if params.net in ["REF_US", "VAE_M01", "VAE_2D"]:
+        if params.net in ["REF_US", "VAE_3D", "VAE_2D"]:
             validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True, logvar_out=True)
         else:
             validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True)
