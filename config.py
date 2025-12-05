@@ -103,7 +103,7 @@ class Training_Parameters:
         self.num_epochs = num_epochs    
         self.learning_rate = LR
         self.batch_size = batch
-        self.train_ratio = 0.5           #What ratio of dataset for training (Training ratio = 1 - validation ratio)
+        self.train_ratio = 0.8           #What ratio of dataset for training (Training ratio = 1 - validation ratio)
         self.validation = True              #Whether you want validation each epoch
         self.save_model_each_epoch = True   #Save model and training parameters every epoch
         self.crop = crop

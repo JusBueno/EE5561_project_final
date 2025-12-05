@@ -194,7 +194,7 @@ while epoch < params.num_epochs:
     #---Validation
     if(params.validation):
         val_start = time.time() # To measure validation time
-        if params.net in ["REF_US", "VAE_M01", "VAE_M04", "VAE_2D"]:
+        if params.net in ["REF_US", "VAE_M01", "VAE_2D"]:
             validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable, logvar_out=True)
         else:
             validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable)
