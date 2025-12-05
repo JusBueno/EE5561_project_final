@@ -33,12 +33,12 @@ if resume_training: #Load existing params
     checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
     validation_metrics = np.load(results_path / "validation_metrics.npy")
     training_metrics = np.load(results_path / "training_metrics.npy")
-    best_val_dice = validation_metrics.min(axis=0)[0]
+    best_val_dice_loss = validation_metrics.min(axis=0)[0]
 else:
     with open(results_path /'params.pkl', 'wb') as f:
         pickle.dump(params, f)
     save_configs(params, results_path /'params.txt')
-    best_val_dice = 0
+    best_val_dice_loss = np.inf
     validation_metrics = np.zeros((params.num_epochs,3))
     training_metrics = np.zeros((params.num_epochs,3))
 
@@ -201,10 +201,10 @@ while epoch < params.num_epochs:
         val_times[epoch] = val_end - val_start
         np.save(results_path / "val_times.npy", val_times)
 
-        dice = validation_metrics[epoch,0]
-        best_epoch = dice > best_val_dice
-        if(best_epoch): 
-            best_val_dice = dice
+        dice_loss = validation_metrics[epoch,0]
+        best_epoch = dice_loss < best_val_dice_loss
+        if(best_epoch):
+            best_val_dice_loss = dice_loss
             best_epoch_num = epoch
         plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, True, params.net)
 
@@ -213,7 +213,7 @@ while epoch < params.num_epochs:
             break
             
     checkpoint = {
-        'best_dice': best_val_dice,
+        'best_dice': best_val_dice_loss,
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
