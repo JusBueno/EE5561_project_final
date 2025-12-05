@@ -9,6 +9,7 @@ from scipy import ndimage
 from src.random_crop_fun import crop_3d
 from src.img_wavelet import img_wavelet, img_wavelet_3d
 from src.downsample import *
+from config import Configs
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -18,53 +19,41 @@ class BRATS_dataset(Dataset):
     """
     BRATS 2020 2.5D dataset
     """
-    def __init__(self, dataset_path, device, params, fixed_crop = False):
+    def __init__(self, dataset_path, device, fixed_crop = False):
         self.dataset_path = Path(dataset_path)
         self.device = device
-        
-        # Core params
-        self.slab_dim = params.slab_dim
-        self.ds_ratio = params.ds_ratio
-        self.data_shape = params.data_shape
-        self.downsamp_type = params.downsamp_type
-        self.augment = params.augment
-        self.binary_mask = params.binary_mask
-        self.threeD = params.threeD
-        self.modality_index = params.modality_index
-        self.crop = params.crop
-        self.crop_size = params.crop_size
-        self.fixed_crop = fixed_crop  
+        self.params = Configs().parse()
+        self.fixed_crop = fixed_crop
         
         # Output / input dimensions
-        if not self.crop:
-            self.output_dim = [3, self.slab_dim, 240, 240]
-            self.input_dim  = [4, self.slab_dim // self.ds_ratio,
-                            240 // self.ds_ratio,
-                            240 // self.ds_ratio]
+        if not self.params.crop:
+            self.output_dim = [3, self.params.slab_dim, 240, 240]
+            self.input_dim  = [4, self.params.slab_dim // self.params.ds_ratio,
+                            240 // self.params.ds_ratio,
+                            240 // self.params.ds_ratio]
         else:
-            self.output_dim = [3] + self.crop_size
-            self.input_dim  = [4] + [n//self.ds_ratio for n in self.crop_size]
-
+            self.output_dim = [3] + self.params.crop_size
+            self.input_dim  = [4] + [n//self.params.ds_ratio for n in self.params.crop_size]
 
 
         # Compute slabs per volume
-        max_slabs = self.data_shape[2] - 2*(self.slab_dim//2)
-        self.slabs_per_volume = min(params.slabs_per_volume, max_slabs)
+        max_slabs = self.params.data_shape[2] - 2*(self.params.slab_dim//2)
+        self.slabs_per_volume = min(self.params.slabs_per_volume, max_slabs)
 
         # Slice index list
         self.slice_indices = [
-            ((i+1) * self.data_shape[2]) // (self.slabs_per_volume + 1)
-            for i in range(self.slabs_per_volume)
+            ((i+1) * self.params.data_shape[2]) // (self.params.slabs_per_volume + 1)
+            for i in range(self.params.slabs_per_volume)
         ]
 
         # Subdirectories (one per volume)
-        subs = [p for p in Path(dataset_path).iterdir() if p.is_dir()]
-        if len(subs) > params.num_volumes:
-            subs = subs[:params.num_volumes]
+        subs = [p for p in self.dataset_path.iterdir() if p.is_dir()]
+        if len(subs) > self.params.num_volumes:
+            subs = subs[:self.params.num_volumes]
 
         self.subdirs = subs
         self.num_volumes = len(subs)
-        self.length = self.slabs_per_volume * self.num_volumes
+        self.length = self.slabs_per_volume * self.params.num_volumes
 
 
     def __len__(self):
@@ -85,12 +74,12 @@ class BRATS_dataset(Dataset):
     
     def downsize(self, img):
         Nc, Nd, Nx, Ny = img.shape
-        d = self.ds_ratio
+        d = self.params.ds_ratio
         dinv = 1 / float(d)
-        s = self.downsamp_type
+        s = self.params.downsamp_type
 
         #If 3D, downsample the whole volume
-        if self.threeD:
+        if self.params.threeD:
             img_ds = np.zeros([Nc, Nd//d, Nx//d, Ny//d], dtype=img.dtype)
             for i in range(Nc):
                 if(s == "bicubic"): img_ds[i] = ndimage.zoom(img[i], (dinv, dinv, dinv), order=3)
@@ -139,12 +128,12 @@ class BRATS_dataset(Dataset):
 
     def __getitem__(self, idx):
         # Identify which volume + which slab
-        v_idx = idx // self.slabs_per_volume
-        s_idx = self.slice_indices[idx % self.slabs_per_volume]
+        v_idx = idx // self.params.slabs_per_volume
+        s_idx = self.slice_indices[idx % self.params.slabs_per_volume]
 
         # Determine slice range
-        half = self.slab_dim // 2
-        if self.slab_dim % 2 == 0:
+        half = self.params.slab_dim // 2
+        if self.params.slab_dim % 2 == 0:
             sl = np.arange(s_idx - half, s_idx + half)
         else:
             sl = np.arange(s_idx - half, s_idx + half + 1)
@@ -168,7 +157,7 @@ class BRATS_dataset(Dataset):
         imgs = [self.zscore(x) if x.max() > 0 else x for x in slabs]
 
         # Augmentation
-        if self.augment:
+        if self.params.augment:
             imgs, mask = self.augment_pair(imgs, mask)
 
         # Build 3-channel mask (BRATS uses labels 1,2,4)
@@ -177,8 +166,8 @@ class BRATS_dataset(Dataset):
         imgs = np.stack(imgs) 
         
         # Apply cropping
-        if self.crop:
-            imgs, mask = crop_3d(imgs, mask, self.crop_size, fixed=self.fixed_crop)
+        if self.params.crop:
+            imgs, mask = crop_3d(imgs, mask, self.params.crop_size, fixed=self.fixed_crop)
 
         imgs_ds = self.downsize(imgs)
 
@@ -186,7 +175,7 @@ class BRATS_dataset(Dataset):
         imgs_ds = torch.tensor(imgs_ds, dtype=torch.float32, device=self.device)
         mask = torch.tensor(mask, dtype=torch.float32, device=self.device)
 
-        if not self.threeD:
+        if not self.params.threeD:
             Nc, Nz, Nx, Ny = imgs.shape
             Nc, Nz2, Nx2, Ny2 = imgs_ds.shape
             imgs = imgs.view(Nc*Nz,Nx,Ny)

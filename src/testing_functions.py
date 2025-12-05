@@ -151,7 +151,7 @@ def plot_examples(model, test_dataset, slices, save_path, VAE_enable = True, UNE
 
             fig.tight_layout()
             fig.savefig(save_path / f"out_{j}.png")
-            plt.close(fig)
+            plt.close("all")
             j += 1
         
 
@@ -206,3 +206,4 @@ def plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, 
 
     fig.tight_layout()
     fig.savefig(results_path/"loss_curves.png")
+    plt.close("all")
