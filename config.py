@@ -27,8 +27,8 @@ class Configs:
 
         # Dataset parameters
         self.parser.add_argument("--slab_dim", type=int, default=144)
-        self.parser.add_argument("--slabs_per_volume", type=int, default=1)
-        self.parser.add_argument("--num_volumes", type=int, default=369)
+        #self.parser.add_argument("--slabs_per_volume", type=int, default=1)
+        #self.parser.add_argument("--num_volumes", type=int, default=369)
         self.parser.add_argument("--fusion", type=str, default="None")
 
         # Boolean toggles
@@ -73,6 +73,8 @@ class Configs:
         cfg.modality_index = 0
         cfg.augment = True
         cfg.binary_mask = False
+        cfg.slabs_per_volume = 1 if cfg.threeD else 10
+        cfg.num_volumes = 369
 
         if cfg.net not in possible_nets:
             sys.exit(f"Error: network '{cfg.net}' is not implemented.")
