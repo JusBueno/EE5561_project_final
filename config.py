@@ -75,6 +75,7 @@ class Configs:
         cfg.binary_mask = False
         cfg.slabs_per_volume = 1 if cfg.threeD else 10
         cfg.num_volumes = 2
+        cfg.val_patience = 10
 
         if cfg.net not in possible_nets:
             sys.exit(f"Error: network '{cfg.net}' is not implemented.")
