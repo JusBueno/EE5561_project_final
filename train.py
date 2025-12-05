@@ -98,7 +98,7 @@ output_shape = dataset.output_dim
 
 
 if params.net == "REF":
-    model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, params.UNET_enable, mode='trilinear')
+    model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, True, mode='trilinear')
 elif params.net == "REF_US":
     model = REF_VAE_UNET_3D(in_channels=inChans, input_dim=input_shape[-3:], num_classes=4, VAE_enable=params.VAE_enable)
 elif params.net == "VAE_M01":
@@ -147,6 +147,7 @@ else:
 
 #=========== TRAINING LOOP ===============
 best_epoch = True
+best_epoch_num = 0
 
 while epoch < params.num_epochs:
 
@@ -190,9 +191,9 @@ while epoch < params.num_epochs:
     if(params.validation):
         val_start = time.time() # To measure validation time
         if params.net in ["REF_US", "VAE_M01", "VAE_2D"]:
-            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable, logvar_out=True)
+            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True, logvar_out=True)
         else:
-            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable)
+            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True)
         np.save(results_path / "validation_metrics.npy", validation_metrics)
         
         # Save validation time
@@ -202,9 +203,14 @@ while epoch < params.num_epochs:
 
         dice = validation_metrics[epoch,0]
         best_epoch = dice > best_val_dice
-        if(best_epoch): best_val_dice = dice
-        plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, params.UNET_enable, params.net)
-        
+        if(best_epoch): 
+            best_val_dice = dice
+            best_epoch_num = epoch
+        plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, params.VAE_enable, True, params.net)
+
+        #Break if performance doesn't increase after (params.val_patience) epochs
+        if(epoch - best_epoch_num > params.val_patience):
+            break
             
     checkpoint = {
         'best_dice': best_val_dice,
@@ -218,9 +224,9 @@ while epoch < params.num_epochs:
     if(params.save_model_each_epoch):
         torch.save(checkpoint, results_path / "checkpoint.pth.tar")
     
-    if(not params.UNET_enable or (best_epoch and params.save_model_each_epoch)):
+    if(best_epoch and params.save_model_each_epoch):
         torch.save(checkpoint, results_path / "best_checkpoint.pth.tar")
-        plot_examples(model, val_dataset, range(10), results_path, VAE_enable = params.VAE_enable, UNET_enable = params.UNET_enable, threeD = params.threeD)
+        plot_examples(model, val_dataset, range(10), results_path, VAE_enable = params.VAE_enable, UNET_enable = True, threeD = params.threeD)
 
     if device.type == "cuda":
         torch.cuda.synchronize()
