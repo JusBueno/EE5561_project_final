@@ -14,11 +14,6 @@ class REF_VAE_UNET_3D(nn.Module):
         self.enc_dim = self.input_dim // 8 # Encoder Output Dimension
         self.VAE_C1 = np.floor((self.enc_dim - 1) / 2) + 1
         
-        # DEBUGGING
-        print("DEBUG")
-        print(self.input_dim)
-        print(self.enc_dim)
-        print(self.VAE_C1)
 
         # Encoder Layers
         self.E1 = nn.Sequential(
