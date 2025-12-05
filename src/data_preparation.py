@@ -19,7 +19,7 @@ class BRATS_dataset(Dataset):
     """
     BRATS 2020 2.5D dataset
     """
-    def __init__(self, dataset_path, device, fixed_crop = False):
+    def __init__(self, dataset_path, device, fixed_crop = True):
         self.dataset_path = Path(dataset_path)
         self.device = device
         self.params = Configs().parse()

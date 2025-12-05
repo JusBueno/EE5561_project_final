@@ -100,11 +100,11 @@ output_shape = dataset.output_dim
 if params.net == "REF":
     model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, params.UNET_enable, mode='trilinear')
 elif params.net == "REF_US":
-    model = REF_VAE_UNET_3D(in_channels=inChans, input_dim=np.asarray([params.slab_dim, 240, 240], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable)
+    model = REF_VAE_UNET_3D(in_channels=inChans, input_dim=input_shape[-3:], num_classes=4, VAE_enable=params.VAE_enable)
 elif params.net == "VAE_M01":
-    model = VAE_UNET_3D_M01(in_channels=inChans, input_dim=np.asarray([params.slab_dim, 240, 240], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
+    model = VAE_UNET_3D_M01(in_channels=inChans, input_dim=input_shape[-3:], num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
 elif params.net == "VAE_2D":
-    model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=np.asarray([240, 240], dtype=np.int64), num_classes=4, VAE_enable=True, HR_layers=0, fusion=params.fusion)
+    model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=input_shape[-2:], num_classes=4, VAE_enable=True, HR_layers=0, fusion=params.fusion)
 model = model.to(device)
 
 if torch.cuda.device_count() >= 2:
