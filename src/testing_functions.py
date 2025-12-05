@@ -170,8 +170,8 @@ def plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, 
         ax[0].grid()
         
         for i in range(1,3):
-            ax[i].plot(validation_metrics[:epoch+1, i], label='Validation')
             ax[i].plot(training_metrics[:epoch+1, i], label='Training')
+            ax[i].plot(validation_metrics[:epoch+1, i], label='Validation')
             ax[i].set_xlabel("Epochs", fontsize = 13)
             ax[i].set_ylabel(title_list[i], fontsize = 13)
             ax[i].grid()
@@ -184,8 +184,8 @@ def plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, 
         title_list = ["Dice coefficient", "MSE", "KL Divergence"]
         
         for i in range(1,3):
-            ax[i-1].plot(validation_metrics[:epoch+1, i], label='Validation')
             ax[i-1].plot(training_metrics[:epoch+1, i], label='Training')
+            ax[i-1].plot(validation_metrics[:epoch+1, i], label='Validation')
             ax[i-1].set_xlabel("Epochs", fontsize = 13)
             ax[i-1].set_ylabel(title_list[i], fontsize = 13)
             ax[i-1].grid()
