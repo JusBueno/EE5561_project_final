@@ -58,7 +58,7 @@ class Configs:
     def parse(self):
         cfg = self.parser.parse_args()
 
-        possible_nets = ["REF", "REF_US", "VAE_M01", "VAE_2D"]
+        possible_nets = ["REF", "REF_US", "VAE_3D", "VAE_2D"]
 
         # Additional derived config values
         cfg.train_ratio = 0.8
@@ -66,8 +66,8 @@ class Configs:
         cfg.save_model_each_epoch = True
         cfg.HR_layers = int(np.log2(cfg.ds_ratio)) if cfg.ds_ratio > 0 else 0
 
-        cfg.threeD = cfg.net in ["REF", "REF_US", "VAE_M01"]
-        cfg.logvar = cfg.net in ["VAE_2D", "REF_US", "VAE_M01"]
+        cfg.threeD = cfg.net in ["REF", "REF_US", "VAE_3D"]
+        cfg.logvar = cfg.net in ["VAE_2D", "REF_US", "VAE_3D"]
         cfg.data_shape = [155, 240, 240]
         cfg.crop_size = [cfg.slab_dim, 160, 224]
         cfg.modality_index = 0
@@ -96,7 +96,7 @@ class Training_Parameters:
                  downsamp_type = 'bilinear', ds_ratio = 1, crop = True, VAE_warmup = False, fusion = "None"):
         
         #Choose a network
-        possible_nets = ["REF", "REF_US", "VAE_M01", "VAE_2D"]
+        possible_nets = ["REF", "REF_US", "VAE_3D", "VAE_2D"]
         fusion_types = ["None", "Slab", "Modality", "Hybrid"]
 
         self.net = net
@@ -122,7 +122,7 @@ class Training_Parameters:
         
         
         #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
-        self.threeD = self.net in ["REF", "REF_US", "VAE_M01"] #Use volume dimension
+        self.threeD = self.net in ["REF", "REF_US", "VAE_3D"] #Use volume dimension
         self.num_volumes = 2  #Maximum = 369 for the training dataset
         self.data_shape = [155,240,240] #Original data shape [Height x Width x Depth]
         self.crop_size = [self.slab_dim,240,240] #Used data shape [Depth x Height x Width]
