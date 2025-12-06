@@ -233,6 +233,6 @@ while epoch < params.num_epochs:
     epoch += 1
     scheduler.step() #Adjust learning rate
     if params.VAE_warmup:
-        criterion.vae_annealer.step()
+        criterion.kl_annealer.step()
         criterion.recon_annealer.step()
     
