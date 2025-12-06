@@ -170,10 +170,6 @@ while epoch < params.num_epochs:
         combined_loss.backward()
         optimizer.step()
 
-        if params.VAE_warmup:
-            criterion.vae_annealer.step()
-            criterion.recon_annealer.step()
-
         train_bar.set_postfix(loss=combined_loss.item())
     
     training_metrics[epoch,:] = training_metrics[epoch,:] / len(train_bar)
@@ -236,4 +232,7 @@ while epoch < params.num_epochs:
 
     epoch += 1
     scheduler.step() #Adjust learning rate
+    if params.VAE_warmup:
+        criterion.vae_annealer.step()
+        criterion.recon_annealer.step()
     
