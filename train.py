@@ -107,7 +107,7 @@ elif params.net == "REF_US":
 elif params.net == "VAE_3D":
     model = VAE_UNET_3D_M01(in_channels=inChans, input_dim=np.asarray(output_shape[-3:], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
 elif params.net == "VAE_2D":
-    model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=np.asarray(output_shape[-2:], dtype=np.int64), num_classes=4, VAE_enable=True, HR_layers=0, fusion=params.fusion)
+    model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=np.asarray(output_shape[-2:], dtype=np.int64), num_classes=4, VAE_enable=True, HR_layers=params.HR_layers, fusion=params.fusion)
 model = model.to(device)
 
 # Estimate network size
