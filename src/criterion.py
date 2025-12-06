@@ -210,7 +210,7 @@ class Annealer:
             return 0
         
         if self.shape == 'linear':
-            y = ((self.current_step-self.start_epochs) / self.total_steps)
+            y = ((self.current_step-self.start_epochs) / (self.total_steps-self.start_epochs))
         elif self.shape == 'cosine':
             y = (math.cos(math.pi * ((self.current_step-self.start_epochs) / self.total_steps - 1)) + 1) / 2
         elif self.shape == 'logistic':
