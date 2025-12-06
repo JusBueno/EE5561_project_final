@@ -76,6 +76,7 @@ class Configs:
         cfg.slabs_per_volume = 1 if cfg.threeD else 10
         cfg.num_volumes = 369
         cfg.val_patience = 10
+        cfg.start_epoch = 0 #in case of resume
 
         if cfg.net not in possible_nets:
             sys.exit(f"Error: network '{cfg.net}' is not implemented.")

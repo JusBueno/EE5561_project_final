@@ -33,7 +33,9 @@ if resume_training: #Load existing params
     checkpoint = torch.load(results_path/"checkpoint.pth.tar", weights_only = False) 
     validation_metrics = np.load(results_path / "validation_metrics.npy")
     training_metrics = np.load(results_path / "training_metrics.npy")
-    best_val_dice_loss = validation_metrics.min(axis=0)[0]
+    best_val_dice_loss = checkpoint['best_dice']
+    best_epoch_num = checkpoint['epoch']
+    params.start_epoch = checkpoint['epoch'] + 1
 else:
     with open(results_path /'params.pkl', 'wb') as f:
         pickle.dump(params, f)
@@ -41,6 +43,7 @@ else:
     best_val_dice_loss = np.inf
     validation_metrics = np.zeros((params.num_epochs,3))
     training_metrics = np.zeros((params.num_epochs,3))
+    best_epoch_num = 0
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if device == "cpu":
@@ -75,7 +78,7 @@ else:
 
 #=========== SETUP DATASETS AND DATA LOADERS ===============
 
-dataset = BRATS_dataset(data_path, device)
+dataset = BRATS_dataset(data_path, device, params)
 
 #Create training and validation datasets
 train_size = int(params.train_ratio * len(dataset))
@@ -107,11 +110,6 @@ elif params.net == "VAE_2D":
     model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=np.asarray(output_shape[-2:], dtype=np.int64), num_classes=4, VAE_enable=True, HR_layers=0, fusion=params.fusion)
 model = model.to(device)
 
-if torch.cuda.device_count() >= 2:
-    model = nn.DataParallel(model)  
-    print(f"Parallel training with {torch.cuda.device_count()} GPUs")
-
-
 # Estimate network size
 if isinstance(model, nn.DataParallel):
     model_to_size = model.module
@@ -127,7 +125,7 @@ with open(results_path / "model_size_bytes.txt", "w") as f:
     f.write(f"{model_size_bytes:.4f}\n")
 
 
-criterion = CombinedLoss()
+criterion = CombinedLoss(params)
 
 optimizer = torch.optim.Adam(model.parameters(), lr = params.LR, weight_decay = 1e-5)
 lr_lambda = lambda epoch: (1 - epoch / params.num_epochs) ** 0.9
@@ -147,7 +145,6 @@ else:
 
 #=========== TRAINING LOOP ===============
 best_epoch = True
-best_epoch_num = 0
 
 while epoch < params.num_epochs:
 

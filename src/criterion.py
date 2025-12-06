@@ -74,14 +74,16 @@ class CombinedLoss(_Loss):
     As default: k1=0.1, k2=0.1
     Accepts either 5 inputs (if using VAE) or 2 (if not using VAE)
     '''
-    def __init__(self, separate = True):
+    def __init__(self, params, separate = True):
         super(CombinedLoss, self).__init__()
-        self.params = Configs().parse()
+        self.params = params
         self.separate = separate
         
         if self.params.VAE_warmup:
             self.kl_annealer = Annealer(17, start_epochs=2)
             self.recon_annealer = Annealer(5)
+            self.kl_annealer.current_step = params.start_epoch
+            self.recon_annealer.current_step = params.start_epoch
         else: self.kl_annealer = self.recon_annealer = None
 
         if self.params.logvar_out:
