@@ -81,7 +81,7 @@ class CombinedLoss(_Loss):
         
         if self.params.VAE_warmup:
             self.kl_annealer = Annealer(17, start_epochs=2)
-            self.recon_annealer = Annealer(5)
+            self.recon_annealer = Annealer(5, baseline=0.2)
             self.kl_annealer.current_step = params.start_epoch
             self.recon_annealer.current_step = params.start_epoch
         else: self.kl_annealer = self.recon_annealer = None
