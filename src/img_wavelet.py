@@ -68,6 +68,8 @@ def img_wavelet(img, factor):
         img_col_dwt[:,col] = dwt_1d(img_row_dwt[:,col], 1, 
                                     scaling_function, 
                                     wavelet_function)[0]['approximation']
+    if factor == 4:
+        img_col_dwt = img_wavelet(img_col_dwt, None)
     
     return img_col_dwt
 
@@ -106,5 +108,8 @@ def img_wavelet_3d(img, factor):
             img_slide_dwt[:, row, col] = dwt_1d(img_col_dwt[:, row, col], 1, 
                                         scaling_function, 
                                         wavelet_function)[0]['approximation']
+    
+    if factor == 4:
+        img_slide_dwt = img_wavelet_3d(img_slide_dwt, None)
     
     return img_slide_dwt
