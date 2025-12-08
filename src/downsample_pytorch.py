@@ -100,8 +100,8 @@ def filter_downsample_2d(img, factor, device=None):
     # stride=factor does the downsampling
     out = F.conv2d(img_4d, ker_4d,
                    padding=(pad_h, pad_w),
-                   stride=factor) # (1,1,H',W')
-    return out.squeeze(0).squeeze(0) # (H', W')
+                   stride=factor)
+    return out.squeeze(0).squeeze(0).detach().cpu().numpy()
 
 def correlate_3d(img, kernel, device=None):
     """
@@ -177,4 +177,4 @@ def filter_downsample_3d(img, factor, device=None):
     out = F.conv3d(img_5d, ker_5d,
                    padding=(pad_d, pad_h, pad_w),
                    stride=factor)
-    return out.squeeze(0).squeeze(0)
+    return out.squeeze(0).squeeze(0).detach().cpu().numpy()
