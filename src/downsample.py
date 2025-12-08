@@ -23,9 +23,6 @@ def _default_device(device):
 def correlate_2d(img, kernel, device=None):
     """
     Same-output-size 2D correlation using PyTorch conv2d (which is correlation).
-    img: (H, W)
-    kernel: (Kh, Kw)
-    Returns: (H, W) torch.Tensor on device
     """
     device = _default_device(device)
 
@@ -58,7 +55,6 @@ def gaussian_kernel_2d(kernel_size, sigma, device=None, dtype=torch.float32):
     """
     2D isotropic Gaussian kernel of size (kernel_size, kernel_size),
     normalized to sum to 1.
-
     kernel_size should be odd.
     """
     device = _default_device(device)
@@ -100,15 +96,12 @@ def filter_downsample_2d(img, factor, device=None):
     # stride=factor does the downsampling
     out = F.conv2d(img_4d, ker_4d,
                    padding=(pad_h, pad_w),
-                   stride=factor) # (1,1,H',W')
-    return out.squeeze(0).squeeze(0).detach().cpu().numpy() # (H', W')
+                   stride=factor)
+    return out.squeeze(0).squeeze(0).detach().cpu().numpy()
 
 def correlate_3d(img, kernel, device=None):
     """
     Same-output-size 3D correlation using PyTorch conv3d.
-    img: (D, H, W)
-    kernel: (Kd, Kh, Kw)
-    Returns: (D, H, W) torch.Tensor on device
     """
     device = _default_device(device)
 
