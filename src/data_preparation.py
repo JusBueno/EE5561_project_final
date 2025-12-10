@@ -84,9 +84,9 @@ class BRATS_dataset(Dataset):
             for i in range(Nc):
                 if(s == "bicubic"): img_ds[i] = ndimage.zoom(img[i], (dinv, dinv, dinv), order=3)
                 if(s == "bilinear"): img_ds[i] = ndimage.zoom(img[i], (dinv, dinv, dinv), order=1)
-                if(s == "wavelet"): img_ds[i] = img_wavelet_3d(img[i], d)
-                if(s == "ds"): img_ds[i] = downsample_3d(img[i], d)
-                if(s == "ds_filter"): img_ds[i] = filter_downsample_3d(img[i], d)
+                if(s == "wavelet"): img_ds[i] = img_wavelet_3d(img[i], d).cpu()
+                if(s == "ds"): img_ds[i] = downsample_3d(img[i], d).cpu()
+                if(s == "ds_filter"): img_ds[i] = filter_downsample_3d(img[i], d).cpu()
         #If 2D, downsample each slice individually
         else:
             img_ds = np.zeros([Nc, Nd, Nx//d, Ny//d], dtype=img.dtype)
@@ -94,9 +94,9 @@ class BRATS_dataset(Dataset):
                 for j in range(Nd):
                     if(s == "bicubic"): img_ds[i,j] = ndimage.zoom(img[i,j], (dinv, dinv), order=3)
                     if(s == "bilinear"): img_ds[i,j] = ndimage.zoom(img[i,j], (dinv, dinv), order=1)
-                    if(s == "wavelet"): img_ds[i,j] = img_wavelet(img[i,j], d)
-                    if(s == "ds"): img_ds[i,j] = downsample_2d(img[i,j], d)
-                    if(s == "ds_filter"): img_ds[i,j] = filter_downsample_2d(img[i,j], d)
+                    if(s == "wavelet"): img_ds[i,j] = img_wavelet(img[i,j], d).cpu()
+                    if(s == "ds"): img_ds[i,j] = downsample_2d(img[i,j], d).cpu()
+                    if(s == "ds_filter"): img_ds[i,j] = filter_downsample_2d(img[i,j], d).cpu()
         return img_ds
     
 
