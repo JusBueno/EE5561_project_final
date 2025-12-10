@@ -116,22 +116,22 @@ For selecting gpu for execution:
 # Test and Implementation
 
 1. Determine the best performing LR, stop with plateau
-(1) REF_US, LR: 1e-4, with VAE *
-(2) REF_US, LR: 1e-4, without VAE *
-(3) REF_US, LR: 5e-5, with VAE
-(4) REF_US, LR: 5e-5, without VAE
-(5) REF_US, LR: 1e-5, with VAE *
-(6) REF_US, LR: 1e-5, without VAE *
+(1) REF_US, LR: 1e-4, with VAE *    | Dice = 0.744
+(2) REF_US, LR: 1e-4, without VAE * | Dice = 0.765
+(3) REF_US, LR: 5e-5, with VAE      | Dice = 0.799
+(4) REF_US, LR: 5e-5, without VAE   | Dice = 0.807
+(5) REF_US, LR: 1e-5, with VAE *    | Dice = 0.790
+(6) REF_US, LR: 1e-5, without VAE * | Dice = 0.796
 
 2. Determine the best performing weight schema (use best performing LR)
 (7) REF_US, [1, 0.1, 0.1], with VAE 
-(8) REF_US, [1, 0.1, 0.01], with VAE *
-(9) REF_US, [1, 0.1, 0.001], with VAE *
-(10) REF_US, [1, 0.05, 0.01], with VAE
-(11) REF_US, [1, 0.05, 0.001], with VAE *
-(12) REF_US, [1, 0.05, 0.0001], with VAE
-(13) REF_US, [1, 0.01, 0.001], with VAE
-(14) REF_US, [1, 0.01, 0.0001], with VAE
+(8) REF_US, [1, 0.1, 0.01], with VAE *    | Dice = 0.800
+(9) REF_US, [1, 0.1, 0.001], with VAE *   | Dice = 0.795
+(10) REF_US, [1, 0.05, 0.01], with VAE    | Dice = 0.791
+(11) REF_US, [1, 0.05, 0.001], with VAE * | Dice = 0.793
+(12) REF_US, [1, 0.05, 0.0001], with VAE  | Dice = 0.799
+(13) REF_US, [1, 0.01, 0.001], with VAE   | Dice = 0.810
+(14) REF_US, [1, 0.01, 0.0001], with VAE  | Dice = 0.791
 
 3. VAE 3D with downsized images - Bilinear x2 - Learning Rate
 (15) VAE_3D, LR: 1e-4, with VAE *
@@ -143,10 +143,10 @@ For selecting gpu for execution:
 
 4. VAE 3D with downsized images - Bilinear x2 - Weight Schema
 (21) VAE_3D, [1, 0.1, 0.1], with VAE *
-(22) VAE_3D, [1, 0.1, 0.01], with VAE *
-(23) VAE_3D, [1, 0.1, 0.001], with VAE * 
-(24) VAE_3D, [1, 0.05, 0.01], with VAE
-(25) VAE_3D, [1, 0.05, 0.001], with VAE *
+(22) VAE_3D, [1, 0.1, 0.01], with VAE *   | Dice = 0.784
+(23) VAE_3D, [1, 0.1, 0.001], with VAE *  | Dice = 0.767
+(24) VAE_3D, [1, 0.05, 0.01], with VAE    | Dice = 0.770
+(25) VAE_3D, [1, 0.05, 0.001], with VAE * | Dice = 0.782
 (26) VAE_3D, [1, 0.05, 0.0001], with VAE
 (27) VAE_3D, [1, 0.01, 0.001], with VAE
 (28) VAE_3D, [1, 0.01, 0.0001], with VAE
