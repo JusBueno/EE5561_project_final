@@ -1,115 +1,59 @@
-import numpy as np
+import torch
+import torch.nn.functional as F
 import math
 
-def corr_1d(signal, kernel):
-    """'same' correlation with periodic padding"""
-    n = kernel.shape[0]
-    spaces = math.ceil((n-1)/2)
-
-    if n % 2 != 0:
-        padded = np.pad(signal, (spaces, spaces), mode='wrap')
-    else:
-        padded = np.pad(signal, (spaces, spaces-1), mode='wrap')
-    result = np.correlate(padded, kernel, mode='valid') # Still, 'same' through padding
-    return result
-
-def dwt_1d(sig, levels, scaling_function, wavelet_function):
-    """
-    Returns a list of np.arrays. [approx., detail]
-    If legnth of signal do not allow to reach all levels, truncate 
-    """
-    # Check if odd
-    if len(sig) % 2 != 0:
-        sig = np.append(sig, sig[0]) # alternative way?
-    
-    X = []
-    for i in range(levels):
-        # "double inversion" means simple correlation
-        approx = corr_1d(sig, scaling_function)
-        detail = corr_1d(sig, wavelet_function)
-        # Decimate (start at 1 to match pywt)
-        approx = approx[1::2]
-        detail = detail[1::2]
-        X.append({"approximation": approx, "detail": detail})
-
-        # Peparation of the next loop
-        sig = approx.copy()
-        if len(sig) % 2 != 0:
-            sig = np.append(sig, 0)
-
-        if len(approx) <= len(scaling_function):
-            break
-    return X
-
 def img_wavelet(img, factor):
-    ''' Returns 1st level "Blur" 2d wavelet of img.
+    '''
+    Returns 1st or 2nd level "Blur" 2d wavelet of img.
+    The output is downsized by 2 if dimesion is even.
+    '''
+    if factor not in {2, 4}:
+        raise ValueError("Factor must be one of {2, 4}")
+    
+    # Initial setup
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    img_t = torch.as_tensor(img, dtype=torch.float32).to(device)
+    img_4d = img_t.unsqueeze(0).unsqueeze(0) # adding extra dimension for downstream operations
+
+    # Scaling function is a lowpass filter
+    scaling_function = torch.tensor([1.0, 1.0], device=device, dtype=torch.float32) / math.sqrt(2.0)
+    # Outer product to get LL component (separability principle)
+    LL_filter = torch.outer(scaling_function, scaling_function).unsqueeze(0).unsqueeze(0)
+
+    # Implement wavelet with convolution (filtering interpretation)
+    img_downsized = F.conv2d(img_4d, LL_filter, stride=2)
+    img_downsized = img_downsized.squeeze(0).squeeze(0)
+    if factor == 4:
+        img_downsized = img_wavelet(img_downsized, 2)
+
+    return img_downsized
+
+def img_wavelet_3d(img_3d, factor):
+    '''
+    Returns 1st or 2nd level "Blur" 3d wavelet of img.
     The output is downsized by 2 if dimesion is even.
     If it is odd, output dimension is downsized by 2 and
-    rounded up by one. Handles non-square images.
+    rounded down by one
+    '''
+    if factor not in {2, 4}:
+        raise ValueError("Factor must be one of {2, 4}")
     
-    Implementation from chp7, digital image processing, 
-    Gonzales, 4th edition.'''
-    rows, cols = img.shape
+    # Initial setup
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    img_3d_t = torch.as_tensor(img_3d, dtype=torch.float32).to(device)
+    img_5d = img_3d_t.unsqueeze(0).unsqueeze(0)
 
-    # Using haar wavelets
-    scaling_function = (1/np.sqrt(2)) * np.array([1, 1])
-    wavelet_function =  (1/np.sqrt(2)) * np.array([1, -1])
+    # Scaling function is a lowpass filter
+    scaling_function = torch.tensor([1.0, 1.0], device=device, dtype=torch.float32) / math.sqrt(2.0)
+    # Outer product to get LLL component (separability principle)
+    LLL_filter = torch.outer(torch.outer(scaling_function, 
+                                         scaling_function).reshape(-1), 
+                                         scaling_function).reshape(2, 2, 2).unsqueeze(0).unsqueeze(0) 
 
-    cols_new = math.ceil(cols/2)
-    img_row_dwt = np.zeros((rows, cols_new))
-    for row in range(rows):
-        img_row_dwt[row,:] = dwt_1d(img[row,:], 1, 
-                                    scaling_function, 
-                                    wavelet_function)[0]['approximation']
-
-    rows_new = math.ceil(rows/2)
-    img_col_dwt = np.zeros((rows_new, cols_new))
-    for col in range(cols_new):
-        img_col_dwt[:,col] = dwt_1d(img_row_dwt[:,col], 1, 
-                                    scaling_function, 
-                                    wavelet_function)[0]['approximation']
+    # Implement wavelet with convolution (filtering interpretation)
+    img_3d_downsized = F.conv3d(img_5d, LLL_filter, stride=2)
+    img_3d_downsized = img_3d_downsized.squeeze(0).squeeze(0)
     if factor == 4:
-        img_col_dwt = img_wavelet(img_col_dwt, None)
-    
-    return img_col_dwt
+        img_3d_downsized = img_wavelet_3d(img_3d_downsized, 2)
 
-def img_wavelet_3d(img, factor):
-    ''' Returns 1st level "Blur" 3d wavelet of img.
-    The output is downsized by 2 if dimesion is even.
-    If it is odd, output dimension is downsized by 2 and
-    rounded up by one. Handles non-square images.'''
-    slides, rows, cols = img.shape
-
-    # Using haar wavelets
-    scaling_function = (1/np.sqrt(2)) * np.array([1, 1])
-    wavelet_function =  (1/np.sqrt(2)) * np.array([1, -1])
-
-    cols_new = math.ceil(cols/2)
-    img_row_dwt = np.zeros((slides, rows, cols_new))
-    for slide in range(slides):
-        for row in range(rows):
-            img_row_dwt[slide, row, :] = dwt_1d(img[slide, row, :], 1, 
-                                        scaling_function, 
-                                        wavelet_function)[0]['approximation']
-
-    rows_new = math.ceil(rows/2)
-    img_col_dwt = np.zeros((slides, rows_new, cols_new))
-    for slide in range(slides):
-        for col in range(cols_new):
-            img_col_dwt[slide, :, col] = dwt_1d(img_row_dwt[slide, :, col], 1, 
-                                        scaling_function, 
-                                        wavelet_function)[0]['approximation']
-            
-    
-    slides_new = math.ceil(slides/2)
-    img_slide_dwt = np.zeros((slides_new, rows_new, cols_new))
-    for row in range(rows_new):
-        for col in range(cols_new):
-            img_slide_dwt[:, row, col] = dwt_1d(img_col_dwt[:, row, col], 1, 
-                                        scaling_function, 
-                                        wavelet_function)[0]['approximation']
-    
-    if factor == 4:
-        img_slide_dwt = img_wavelet_3d(img_slide_dwt, None)
-    
-    return img_slide_dwt
+    return img_3d_downsized

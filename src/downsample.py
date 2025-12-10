@@ -8,6 +8,7 @@ def downsample_2d(img, factor):
     return img_t[::factor, ::factor]
 
 def filter_downsample_2d(img, factor):
+    # Initial setup
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     img_t = torch.as_tensor(img, dtype=torch.float32).to(device)
     img_4d = img_t.unsqueeze(0).unsqueeze(0) # (1, 1, h, w)
