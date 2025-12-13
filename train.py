@@ -180,7 +180,7 @@ while epoch < params.num_epochs:
     if(params.validation):
         val_start = time.time() # To measure validation time
         
-        validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True, logvar_out=True)
+        validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True)
         
         np.save(results_path / "validation_metrics.npy", validation_metrics)
         

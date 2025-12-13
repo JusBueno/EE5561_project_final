@@ -92,51 +92,8 @@ def save_configs(cfg, path):
             for key, value in vars(cfg).items():
                 f.write(f"{key}: {value}\n")
 
-#Choose parameters
-class Training_Parameters:
-    def __init__(self, net = "REF", VAE_enable = True, UNET_enable = True, num_epochs = 300, LR = 1e-4, batch = 1, degradation_type = 'downsampling',
-                 downsamp_type = 'bilinear', ds_ratio = 1, crop = True, VAE_warmup = False, fusion = "None"):
-        
-        #Choose a network
-        possible_nets = ["REF", "REF_US", "VAE_3D", "VAE_2D"]
-        fusion_types = ["None", "Slab", "Modality", "Hybrid"]
 
-        self.net = net
-        self.VAE_enable = VAE_enable
-        self.UNET_enable = UNET_enable
-        self.VAE_warmup = VAE_warmup
-        self.fusion = fusion
 
-        #Basic parameters for training
-        self.num_epochs = num_epochs    
-        self.learning_rate = LR
-        self.batch_size = batch
-        self.train_ratio = 0.8           #What ratio of dataset for training (Training ratio = 1 - validation ratio)
-        self.validation = True              #Whether you want validation each epoch
-        self.save_model_each_epoch = True   #Save model and training parameters every epoch
-        self.crop = crop
-        
-        #Choose which type of downsampling/degradation
-        self.degradation_type = degradation_type
-        self.downsamp_type = downsamp_type  #Type of downsampling
-        self.ds_ratio = ds_ratio              #Downsampling factor (if doing downsamplin at all)
-        self.HR_layers = np.log2(self.ds_ratio)
-        
-        
-        #Data preparation parameters (choose dataset size as slabs_per_volume * num_volumes)
-        self.threeD = self.net in ["REF", "REF_US", "VAE_3D"] #Use volume dimension
-        self.num_volumes = 2  #Maximum = 369 for the training dataset
-        self.data_shape = [155,240,240] #Original data shape [Height x Width x Depth]
-        self.crop_size = [self.slab_dim,240,240] #Used data shape [Depth x Height x Width]
-        self.modality_index = 0 #If single modality, which one to choose
-        self.augment = True     #Perform data augmentation or not
-        self.binary_mask = False 
-        
-        
-        if self.net not in possible_nets:
-            sys.exit(f"Error: network {self.net} is not implemented")
-            sys.exit(1) # Exit with an error code
-                          
                           
           
  

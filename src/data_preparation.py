@@ -1,23 +1,47 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import nibabel as nib
 from pathlib import Path
 import torch
-import torch.nn as nn
 from torch.utils.data import Dataset
 from scipy import ndimage
-from src.random_crop_fun import crop_3d
 from src.img_wavelet import img_wavelet, img_wavelet_3d
 from src.downsample import *
-from config import Configs
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def crop_3d(img, mask, crop_size, fixed=False):
+    """
+    Helper function that crops paired 3D volumes [D,H,W] 
+    either centered (fixed=True) or randomly.
+    """
+    C, D, H, W = img.shape
+    cd, ch, cw = crop_size
+
+    if fixed:
+        d0 = (D - cd)//2
+        h0 = (H - ch)//2
+        w0 = (W - cw)//2
+    else:
+        d0 = torch.randint(0, D-cd + 1, (1,)).item()
+        h0 = torch.randint(0, H- ch + 1, (1,)).item()
+        w0 = torch.randint(0, W-cw + 1, (1,)).item()
+
+    return (
+        img[:,d0:d0+cd, h0:h0+ch, w0:w0+cw],
+        mask[:,d0:d0+cd, h0:h0+ch, w0:w0+cw],)
 
 
 #Define dataset for the training
 class BRATS_dataset(Dataset):
     """
-    BRATS 2020 3D or 2.5D dataset
+    BRATS 2020 3D or 2.5D dataset class
+    This class reads the .nii files provided with the BRATS dataset, and 
+    prepares them for training the network. Several options are availeable
+    when it comes to data preparation, which are specificed in the configs file.
+    This class is set up to be able to gather any number of slices from each volume, 
+    or the entire volume itself. This is determined by the slices_per_volume parameter.
+    Also performs data augmentation and cropping
     """
     def __init__(self, dataset_path, device, params, fixed_crop = True):
         self.dataset_path = Path(dataset_path)
@@ -25,7 +49,7 @@ class BRATS_dataset(Dataset):
         self.params = params
         self.fixed_crop = fixed_crop
         
-        # Output / input dimensions
+        # Output / input dimensions depends on whether we crop
         if not self.params.crop:
             self.output_dim = [3, self.params.slab_dim, 240, 240]
             self.input_dim  = [4, self.params.slab_dim // self.params.ds_ratio,
@@ -40,13 +64,14 @@ class BRATS_dataset(Dataset):
         max_slabs = self.params.data_shape[0] - 2*(self.params.slab_dim//2)
         self.slabs_per_volume = min(self.params.slabs_per_volume, max_slabs)
 
-        # Slice index list
+        # If using multiple slices per volume, spread them out for data diversity
         self.slice_indices = [
             ((i+1) * self.params.data_shape[0]) // (self.params.slabs_per_volume + 1)
             for i in range(self.params.slabs_per_volume)
         ]
 
-        # Subdirectories (one per volume)
+        # List all subdirectories (one per volume)
+        # This will help with gathering all the data in get_item()
         subs = [p for p in self.dataset_path.iterdir() if p.is_dir() and not p.name.startswith('.')]
         if len(subs) > self.params.num_volumes:
             subs = subs[:self.params.num_volumes]
@@ -62,6 +87,7 @@ class BRATS_dataset(Dataset):
 
     @staticmethod
     def zscore(data):
+        """Normalize data using only non-zero entries, as suggested in the paper we are referencing"""
         mask = data > 0
         if not np.any(mask):
             return data
@@ -73,6 +99,10 @@ class BRATS_dataset(Dataset):
 
     
     def downsize(self, img):
+        """
+        Downsize 2D or 3D data using several different methods
+        The method is specific by the global config arguments
+        """
         Nc, Nd, Nx, Ny = img.shape
         d = self.params.ds_ratio
         dinv = 1 / float(d)
@@ -102,7 +132,8 @@ class BRATS_dataset(Dataset):
 
     def augment_pair(self, imgs, mask):
         """
-        Apply shared flips + per-image intensity transforms.
+        Apply shared flips and per-image intensity transforms
+        flips are applied to both the images and mask 
         """
         # Global axis flips
         flips = np.random.binomial(1, 0.5, size=3)
@@ -176,6 +207,7 @@ class BRATS_dataset(Dataset):
         imgs_ds = torch.tensor(imgs_ds, dtype=torch.float32, device=self.device)
         mask = torch.tensor(mask, dtype=torch.float32, device=self.device)
 
+        #Adjust dimensions to reshape 2D data into 2D, for the 2D network test
         if not self.params.threeD:
             Nc, Nz, Nx, Ny = imgs.shape
             Nc, Nz2, Nx2, Ny2 = imgs_ds.shape
@@ -184,3 +216,5 @@ class BRATS_dataset(Dataset):
             mask = mask[:,mask.shape[1]//2,:,:]
         
         return imgs, imgs_ds, mask
+    
+

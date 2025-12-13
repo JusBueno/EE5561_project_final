@@ -7,3 +7,5 @@ mocking_epoch_time.py
 *copy/
 *.sh
 log/
+*.pt
+*.nii

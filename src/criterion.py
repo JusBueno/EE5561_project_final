@@ -1,11 +1,18 @@
 import torch
 import torch.nn as nn
 from torch.nn.modules.loss import _Loss
-from config import Configs, save_configs
+import math
 
 def soft_dice_coeff(pred, target, epsilon=1e-8):
     """
     Returns soft dice coefficient along batches and channels
+    This is a custom implementation that takes into account 2D and 3D inputs.
+    Unlike the SoftDiceCoeff function, this function does computes the dice value 
+    separately for each batch and segmentation output. 
+    Input: 
+        pred (float): Binary masks of segmentation prediction, shape: [B, C, H, W] or [B, C, D, H, W] 
+        target (float): Binary masks of segmentation target, shape: [B, C, H, W] or [B, C, D, H, W]
+    Output: Dice coefficient across channels and batches, shape: [B, C]
     """
     if(pred.ndim == 4): #[B, C, H, W]
         intersection = (pred * target).sum(dim=(2, 3))
@@ -24,8 +31,14 @@ def soft_dice_coeff(pred, target, epsilon=1e-8):
 
 class SoftDiceLoss(_Loss):
     '''
+    Inplements the soft dice loss over all dimensions of the inputs
+    We use this when training the network to compute the dice loss 
+    over all batches and all channels at once. 
     Soft_Dice = 2*|dot(A, B)| / (|dot(A, A)| + |dot(B, B)| + eps)
     eps is a small constant to avoid zero division, 
+    Input:
+        y_pred (float): segmentation prediction probabilities
+        y_true (float): binary true segmentation mask
     '''
     def __init__(self, *args, **kwargs):
         super(SoftDiceLoss, self).__init__()
@@ -37,31 +50,17 @@ class SoftDiceLoss(_Loss):
         dice = 2 * intersection / union 
         dice_loss = 1 - dice
         return dice_loss
-
-        #dice_loss = 1-soft_dice_coeff(y_pred, y_true)
-        #return dice_loss.sum(dim=1).mean()
     
-
 
 class CustomKLLoss(_Loss):
     '''
-    KL_Loss = (|dot(mean , mean)| + |dot(std, std)| - |log(dot(std, std))| - 1) / N
-    N is the total number of image voxels
+    Standard KL divergence between the VAE paramters and a normal gaussian
+    Input:
+        mean (float): mean of VAE latent space
+        logvat (float): log of variance of the VAE latent space
     '''
     def __init__(self, *args, **kwargs):
         super(CustomKLLoss, self).__init__()
-
-    def forward(self, mean, std):
-        return torch.mean(torch.mul(mean, mean)) + torch.mean(torch.mul(std, std)) - torch.mean(torch.log(torch.mul(std, std))) - 1
-
-
-class CustomKLLoss_2(_Loss):
-    '''
-    KL_Loss = (|dot(mean , mean)| + |dot(std, std)| - |log(dot(std, std))| - 1) / N
-    N is the total number of image voxels
-    '''
-    def __init__(self, *args, **kwargs):
-        super(CustomKLLoss_2, self).__init__()
 
     def forward(self, mean, logvar):
         var = torch.exp(logvar)
@@ -70,27 +69,29 @@ class CustomKLLoss_2(_Loss):
 
 class CombinedLoss(_Loss):
     '''
-    Combined_loss = Dice_loss + k1 * L2_loss + k2 * KL_loss
+    Combined loss = Dice_loss + k1 * L2_loss + k2 * KL_loss
     As default: k1=0.1, k2=0.1
     Accepts either 5 inputs (if using VAE) or 2 (if not using VAE)
+    Can also be used in a warmup setup, so that the reconstruction
+    and KL divergence loss increase slowly across epochs. This setup
+    uses the annealer class.
+    Input:
+        params: Global config params
+        separate: (Bool) whether to output the results as separate components
     '''
     def __init__(self, params, separate = True):
         super(CombinedLoss, self).__init__()
         self.params = params
-        self.separate = separate
+        self.separate = separate #Whether to return the losses as separate components
         
-        if self.params.VAE_warmup:
+        if self.params.VAE_warmup: #Setup VAE annealer
             self.kl_annealer = Annealer(17, start_epochs=2)
             self.recon_annealer = Annealer(5, baseline=0.2)
             self.kl_annealer.current_step = params.start_epoch
             self.recon_annealer.current_step = params.start_epoch
         else: self.kl_annealer = self.recon_annealer = None
 
-        if self.params.logvar_out:
-            self.kl_loss = CustomKLLoss_2()
-        else:
-            self.kl_loss = CustomKLLoss()
-
+        self.kl_loss = CustomKLLoss()
         self.dice_loss = SoftDiceLoss()
         self.l2_loss = nn.MSELoss()
 
@@ -100,7 +101,7 @@ class CombinedLoss(_Loss):
         dice_loss = self.dice_loss(seg_y_pred, seg_y_true)
 
         if(self.params.VAE_enable):
-            est_mean, est_std = (y_mid[:, :128], y_mid[:, 128:])
+            est_mean, est_std = (y_mid[:, :128], y_mid[:, 128:]) #Get VAE mean and logvar
             l2_loss = self.l2_loss(rec_y_pred, rec_y_true)
             kl_div = self.kl_loss(est_mean, est_std)
             if(self.kl_annealer is not None):
@@ -117,32 +118,15 @@ class CombinedLoss(_Loss):
 
         return combined_loss
     
-    
-#Previous functions
-# def kl_loss(mu, logvar):
-#     var = torch.exp(logvar)
-#     kl = (mu**2 + var - logvar - 1).sum(dim=1).mean()
-#     return kl
 
-# MSE_loss = nn.MSELoss()
-# dice_loss = SoftDiceLoss()
-
-# def combined_loss(seg_out, seg_target, vae_out, vae_target, mu, logvar, w1 = 0.1, w2 = 0.1):
-#     lossSD = dice_loss(seg_out, seg_target) 
-#     lossL2 = MSE_loss(vae_out, vae_target)
-#     lossKL = kl_loss(mu, logvar)  
-#     return lossSD + w1 * lossL2 + w2 * lossKL
-
-
-##VAE Warmup (also called annealing) test
-
-import math
 
 
 class Annealer:
     """
     This class is used to anneal the KL divergence loss over the course of training VAEs.
     After each call, the step() function should be called to update the current epoch.
+    This implementation was borrowed from https://github.com/hubertrybka/vae-annealing
+    and minimally adapted to add the start_epochs parameter
     """
 
     def __init__(self, total_steps, shape='linear', baseline=0.0, cyclical=False, disable=False, start_epochs = 0):
@@ -153,6 +137,7 @@ class Annealer:
             baseline (float): Starting value for the annealing function [0-1]. Default is 0.0.
             cyclical (bool): Whether to repeat the annealing cycle after total_steps is reached.
             disable (bool): If true, the __call__ method returns unchanged input (no annealing).
+            start_epochs (int): Epoch at which to start the weight increase
         """
 
         self.current_step = 0

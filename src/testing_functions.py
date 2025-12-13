@@ -5,21 +5,24 @@ import matplotlib.pyplot as plt
 from src.criterion import *
 
 
-def test_model(model, test_loader, VAE_enable = True, UNET_enable = True, logvar_out=False):
+def test_model(model, test_loader, VAE_enable = True, UNET_enable = True):
     """
     Testing function for the model
-    model: model to be tested
-    test_loader: data loader for the test dataset
-    VAE: boolean indicating whethere the VAE branch is present or not
+    Input:
+        model: model to be tested
+        test_loader: data loader for the test dataset
+        VAE_enable (bool): indicating whethere the VAE decoder branch is present or not
+        UNET_enable (bool): indicating whethere the UNET decoder branch is present or not
+    Output:
+        metrics: 3x1 np array including the Dice coefficient, L2 loss and KL divergence loss
+        averaged over the test dataset. In case of not using the VAE or UNET decoder branch,
+        whatever loss that does not apply is set to 0
     """
     
     model.eval()
     test_bar = tqdm(test_loader, desc=f"[Validation]")
     metrics = np.zeros((3,))
-    if logvar_out:
-        kl_loss_ref = CustomKLLoss_2()
-    else:
-        kl_loss_ref = CustomKLLoss() #KL divergence from the github repo
+    kl_loss_ref = CustomKLLoss()
     MSE_loss = nn.MSELoss()
     dice_loss = SoftDiceLoss()
     with torch.no_grad():
@@ -45,6 +48,15 @@ def test_model(model, test_loader, VAE_enable = True, UNET_enable = True, logvar
 
     
 def plot_examples(model, test_dataset, slices, save_path, VAE_enable = True, UNET_enable = True, threeD = True):
+    """
+    Plot segmentation and reconstruction results for different variation of the network.
+    The size and number of figures plotted depend on the VAE_enable and UNET_enable parameters
+        Input:
+        model: model to be tested
+        test_loader: data loader for the test dataset
+        VAE_enable (bool): indicating whethere the VAE decoder branch is present or not
+        threeD (bool): indicating whethere we use 3D data or 2D data
+    """
     
     model.eval()
     print("Plotting results" + "-"*60)
@@ -156,6 +168,9 @@ def plot_examples(model, test_dataset, slices, save_path, VAE_enable = True, UNE
         
 
 def plot_loss_curves(results_path, validation_metrics, training_metrics, epoch, VAE_enable, UNET_enable, net_type):
+    """
+    Plot training and validation loss curves after training.
+    """
 
     best_val_dice = 1-validation_metrics[:epoch+1, 0].min(axis=0)
 
