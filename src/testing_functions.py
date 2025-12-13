@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from src.criterion import *
 
 
-def test_model(model, test_loader, VAE_enable = True, UNET_enable = True):
+def test_model(model, test_loader, VAE_enable = True, UNET_enable = True, print_res = True):
     """
     Testing function for the model
     Input:
@@ -41,7 +41,8 @@ def test_model(model, test_loader, VAE_enable = True, UNET_enable = True):
     
     metrics = metrics / len(test_bar)
     
-    print(f"--- Validation results --- DICE loss: {metrics[0]:3f}, MSE: {metrics[1]:3f}, KL {metrics[2]:3f}")
+    if(print_res):
+        print(f"--- Validation results --- DICE loss: {metrics[0]:3f}, MSE: {metrics[1]:3f}, KL {metrics[2]:3f}")
     
     return metrics
 

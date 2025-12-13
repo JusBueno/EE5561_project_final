@@ -2,19 +2,26 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from src.network_3D import VAE_UNET_3D_M01, REF_VAE_UNET_3D
+from src.network_2D import VAE_UNET_2D_M01
 from src.criterion import soft_dice_coeff
 
 
-def load_model(net_type, VAE_enable = True):
+def load_model(net_type, VAE_enable = True, HR_layers = 1):
+    #Load a specific architecture, either:
+    #REF (reference network without downsampling)
+    #VAE_3D (3D asymmetrical network with downsampling)
+    #VAE_2D (2D asymmetrical network with downsamplling)
     crop_dim = np.asarray([144, 160, 224], dtype=np.int64)
     if net_type == "REF":
         model = REF_VAE_UNET_3D(in_channels=4, input_dim=crop_dim, num_classes=4, VAE_enable=VAE_enable)
     elif net_type == "VAE_3D":
-        model = VAE_UNET_3D_M01(in_channels=4, input_dim=crop_dim, num_classes=4, VAE_enable=VAE_enable, HR_layers = 1)
+        model = VAE_UNET_3D_M01(in_channels=4, input_dim=crop_dim, num_classes=4, VAE_enable=VAE_enable, HR_layers = HR_layers)
+    elif net_type == "VAE_2D":
+        model = VAE_UNET_2D_M01(in_channels=4*9, input_dim=crop_dim[-2:], num_classes=4, VAE_enable=VAE_enable, HR_layers=HR_layers, fusion="None")
 
     return model
 
-#Choose parameters
+#Parameters for the demo
 class DataParams:
     def __init__(self, ds_ratio = 1, downsamp_type = "bilinear"):
         
@@ -129,9 +136,6 @@ def plot_examples_demo(model, test_dataset, slices, VAE_enable = True):
                     ax[3].imshow(vae_out_2d.cpu())
                     ax[3].set_title(f"VAE output | MSE = {mse_loss:.3f}", fontsize = fs)
                 
-                
-                
-                
 
             for ax in fig.get_axes():
                 ax.set_xticklabels([])
@@ -141,3 +145,24 @@ def plot_examples_demo(model, test_dataset, slices, VAE_enable = True):
 
             fig.tight_layout()
             plt.show()
+            
+            
+            
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def net_param_count():
+    #Get number of parameters for each type of network we use
+    for net_type in ["REF", "VAE_3D", "VAE_2D"]:
+        for VAE_enable in [True, False]:
+            for HR_layers in [1,2]:
+                model  = load_model(net_type, VAE_enable, HR_layers)
+                print("---")
+                if(net_type == "REF"):
+                    print(f"net: {net_type}, VAE: {VAE_enable}")
+                else:
+                    print(f"net: {net_type}, VAE: {VAE_enable}, HR_layers: {HR_layers}")
+                print(f"{count_parameters(model)} parameters")
+
+            
