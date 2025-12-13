@@ -1,4 +1,4 @@
-import sys
+
 import pickle
 import time
 from pathlib import Path
@@ -10,12 +10,10 @@ from src.network import *
 from src.criterion import *
 from src.testing_functions import *
 from src.reference_net import *
-from src.reference_net_mod01 import NvNet_MOD01
-from src.reference_net_mod02 import NvNet_MOD02
-from src.reference_net_mod03 import NvNet_MOD03
-from src.network_3D import REF_VAE_UNET_3D, VAE_UNET_3D_M01, VAE_UNET_3D_M04
-from config import Configs, save_configs
+from src.network_3D import REF_VAE_UNET_3D, VAE_UNET_3D_M01
 from src.network_2D import VAE_UNET_2D_M01
+from config import Configs, save_configs
+
 #=========== SETUP PARAMETERS ===============
 
 params = Configs().parse()
