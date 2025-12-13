@@ -17,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #Define dataset for the training
 class BRATS_dataset(Dataset):
     """
-    BRATS 2020 2.5D dataset
+    BRATS 2020 3D or 2.5D dataset
     """
     def __init__(self, dataset_path, device, params, fixed_crop = True):
         self.dataset_path = Path(dataset_path)
@@ -47,7 +47,7 @@ class BRATS_dataset(Dataset):
         ]
 
         # Subdirectories (one per volume)
-        subs = [p for p in self.dataset_path.iterdir() if p.is_dir()]
+        subs = [p for p in self.dataset_path.iterdir() if p.is_dir() and not p.name.startswith('.')]
         if len(subs) > self.params.num_volumes:
             subs = subs[:self.params.num_volumes]
 
@@ -137,6 +137,7 @@ class BRATS_dataset(Dataset):
             sl = np.arange(s_idx - half, s_idx + half)
         else:
             sl = np.arange(s_idx - half, s_idx + half + 1)
+
 
         # Load volumes (T1, mask, etc.)
         files = list(self.subdirs[v_idx].glob("*.nii*"))
