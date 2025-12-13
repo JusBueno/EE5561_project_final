@@ -67,7 +67,6 @@ class Configs:
         cfg.HR_layers = int(np.log2(cfg.ds_ratio)) if cfg.ds_ratio > 0 else 0
 
         cfg.threeD = cfg.net in ["REF", "REF_US", "VAE_3D"]
-        cfg.logvar_out = cfg.net in ["VAE_2D", "REF_US", "VAE_3D"]
         cfg.data_shape = [155, 240, 240]
         cfg.crop_size = [cfg.slab_dim, 160, 224]
         cfg.modality_index = 0
