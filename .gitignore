@@ -9,3 +9,6 @@ mocking_epoch_time.py
 log/
 *.pt
 *.nii
+training_results/
+demo_data/
+demo_data.zip
