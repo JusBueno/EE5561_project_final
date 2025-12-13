@@ -6,10 +6,8 @@ from tqdm import tqdm
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, random_split
 from src.data_preparation import *
-from src.network import *
 from src.criterion import *
 from src.testing_functions import *
-from src.reference_net import *
 from src.network_3D import REF_VAE_UNET_3D, VAE_UNET_3D_M01
 from src.network_2D import VAE_UNET_2D_M01
 from config import Configs, save_configs
@@ -98,14 +96,14 @@ input_shape = np.asarray(dataset.input_dim)
 output_shape = dataset.output_dim
 
 
-if params.net == "REF":
-    model = NvNet(inChans, input_shape, seg_outChans, "relu", "group_normalization", params.VAE_enable, True, mode='trilinear')
-elif params.net == "REF_US":
+if params.net == "REF_US":
     model = REF_VAE_UNET_3D(in_channels=inChans, input_dim=np.asarray(output_shape[-3:], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable)
 elif params.net == "VAE_3D":
     model = VAE_UNET_3D_M01(in_channels=inChans, input_dim=np.asarray(output_shape[-3:], dtype=np.int64), num_classes=4, VAE_enable=params.VAE_enable, HR_layers = params.HR_layers)
 elif params.net == "VAE_2D":
     model = VAE_UNET_2D_M01(in_channels=inChans*params.slab_dim, input_dim=np.asarray(output_shape[-2:], dtype=np.int64), num_classes=4, VAE_enable=True, HR_layers=params.HR_layers, fusion=params.fusion)
+else:
+    raise ValueError(f"Unknown network type: {params.net}")
 model = model.to(device)
 
 # Estimate network size
@@ -181,10 +179,9 @@ while epoch < params.num_epochs:
     #---Validation
     if(params.validation):
         val_start = time.time() # To measure validation time
-        if params.net in ["REF_US", "VAE_3D", "VAE_2D"]:
-            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True, logvar_out=True)
-        else:
-            validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True)
+        
+        validation_metrics[epoch,:] = test_model(model, val_loader, VAE_enable = params.VAE_enable, UNET_enable = True, logvar_out=True)
+        
         np.save(results_path / "validation_metrics.npy", validation_metrics)
         
         # Save validation time
