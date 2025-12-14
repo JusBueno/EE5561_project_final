@@ -93,7 +93,7 @@ def plot_examples_demo(model, test_dataset, slices, VAE_enable = True):
                     ax[1].imshow(mask_2d.cpu().permute(1,2,0))
                     ax[1].set_title("High-res true mask", fontsize = fs)
                     ax[2].imshow(seg_out_2d.cpu().permute(1,2,0))
-                    ax[2].set_title(f"Predicted mask \n Dice coeff = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
+                    ax[2].set_title(f"Predicted mask \n Dice = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
                 
                 
 
@@ -121,7 +121,7 @@ def plot_examples_demo(model, test_dataset, slices, VAE_enable = True):
                     ax[2].imshow(mask_2d.cpu().permute(1,2,0))
                     ax[2].set_title("True mask", fontsize = fs)
                     ax[3].imshow(seg_out_2d.cpu().permute(1,2,0))
-                    ax[3].set_title(f"Predicted mask \n Dice coeff = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
+                    ax[3].set_title(f"Predicted high-res mask \n Dice = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
                     ax[4].imshow(vae_out_2d.cpu())
                     ax[4].set_title(f"VAE output | MSE = {mse_loss:.3f}", fontsize = fs)
                 else:
@@ -132,7 +132,7 @@ def plot_examples_demo(model, test_dataset, slices, VAE_enable = True):
                     ax[1].imshow(mask_2d.cpu().permute(1,2,0))
                     ax[1].set_title("True mask", fontsize = fs)
                     ax[2].imshow(seg_out_2d.cpu().permute(1,2,0))
-                    ax[2].set_title(f"Predicted mask \n Dice coeff = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
+                    ax[2].set_title(f"Predicted mask \n Dice = {dice_coeff[0]:.2f}, {dice_coeff[1]:.2f}, {dice_coeff[2]:.2f}", fontsize = fs)
                     ax[3].imshow(vae_out_2d.cpu())
                     ax[3].set_title(f"VAE output | MSE = {mse_loss:.3f}", fontsize = fs)
                 
