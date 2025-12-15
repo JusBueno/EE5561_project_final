@@ -6,3 +6,5 @@ torch==2.4.1+cu118
 torchvision==0.19.1+cu118
 tqdm==4.67.1
 gdown==4.0.2
+kaggle==1.5.16
+ipykernel==6.28.0
