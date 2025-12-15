@@ -21,6 +21,18 @@ To run examples using pre-trained models and get their validation accuracy, see 
 # Dataset download
 To download the full dataset, follow the instructions and execute dataset_download.py.
 
+First step: Obtain API Credentials
+
+- Log in to your Kaggle account.
+
+- Navigate to your account settings (click your avatar in the top right, then select "Account").
+
+- Scroll down to the "Legacy API section" section and click "Create Legacy API key." This will download a kaggle.json file containing your API key and username
+
+- Create a folder called .kaggle in the same place where this .py file is. Put the .json file in the folder so that the path is ~/.kaggle/kaggle.json
+
+Instructions from : https://www.kaggle.com/docs/api
+
 # Running a training session
 To train a model from scratch,
 `train.py` accepts one required argument and several optional arguments. The required argument specifies the folder where all output from the training session will be stored. This includes logs, checkpoints, configuration files, and any generated results. If the folder does not exist, it will be created automatically. You need to download the full dataset to use this script.
