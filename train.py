@@ -23,6 +23,7 @@ results_path = Path('training_results')/params.folder
 resume_training = (results_path/"checkpoint.pth.tar").is_file() and params.resume
 results_path.mkdir(parents=True, exist_ok=True)
 
+#Resume training or start from scratch
 if resume_training: #Load existing params
     with open(results_path/'params.pkl', 'rb') as f:
         params = pickle.load(f)
@@ -47,6 +48,7 @@ if device == "cpu":
     
 data_path = '../BRATS20/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/'
 
+#Make np arrays to keep track of GPU metrics
 epoch_times_file = results_path / "epoch_times.npy"
 if resume_training and epoch_times_file.exists():
     epoch_times = np.load(epoch_times_file)
@@ -227,7 +229,7 @@ while epoch < params.num_epochs:
 
     epoch += 1
     scheduler.step() #Adjust learning rate
-    if params.VAE_warmup:
+    if params.VAE_warmup: #Update VAE warmup
         criterion.kl_annealer.step()
         criterion.recon_annealer.step()
     
