@@ -4,7 +4,7 @@ Our project trained a neural network to perform segmentation on the BRATS2020 da
 
 # Get started
 This project needs Python 3.10+. To run create a conda environment, install dependencies from requirements.txt
-
+`pip install torch==2.4.1+cu118 torchvision==0.19.1+cu118 --index-url https://download.pytorch.org/whl/cu118`
 # Running inference and validation
 To run examples using pre-trained models and get their validation accuracy, see demo.ipynb. You do not need to download the full dataset for this notebook.
 
