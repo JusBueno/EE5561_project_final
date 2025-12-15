@@ -3,13 +3,23 @@
 Our project trained a neural network to perform segmentation on the BRATS2020 dataset. The project's aim was to develop a network architecture that could efficiently segment downsampled inputs. Our baseline architecture used a UNET combined with a VAE decoder, as a form of regularization. We experimented with many variations of this, and conducted a through ablation study and hyperparameter search to find out the impact of the VAE. 
 
 # Get started
-This project needs Python 3.10+. To run create a conda environment, install dependencies from requirements.txt
-`pip install torch==2.4.1+cu118 torchvision==0.19.1+cu118 --index-url https://download.pytorch.org/whl/cu118`
+This project needs Python 3.10+. To run create a conda environment, install dependencies from requirements.txt, and `torch==2.4.1+cu118 torchvision==0.19.1+cu118` using pip install. Here are some commands to create an environment (remember to be inside the repository directory): 
+
+1. `conda create --name env_00 python=3.11`
+
+2. `conda deactivate`
+
+3. `conda activate env_00`
+
+4. `pip install -r requirements.txt`
+
+5. `pip install torch==2.4.1+cu118 torchvision==0.19.1+cu118 --index-url https://download.pytorch.org/whl/cu118`
+
 # Running inference and validation
 To run examples using pre-trained models and get their validation accuracy, see demo.ipynb. You do not need to download the full dataset for this notebook.
 
 # Dataset download
-To download the full dataset, follow the instructions and execute dataset_download.ipynb.
+To download the full dataset, follow the instructions and execute dataset_download.py.
 
 # Running a training session
 To train a model from scratch,
