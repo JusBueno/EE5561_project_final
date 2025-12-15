@@ -23,7 +23,8 @@ folder : Name or path of the folder where the training session will be saved.
 
 --resume or --start_new : Whether to resume training from existing checkpoint. Default is --resume
 
---net : Network type to use. Default is "REF_US". Options are [REF_US, VAE_3D, VAE_2D]
+--net : Network type to use. Default is "REF_US". Options are [REF_US, VAE_3D, VAE_2D] REF_US is the reference network, VAE_3D and VAE_2D are the networks that
+can take downsampled inputs.
 
 --num_epochs : Number of epochs to train. Default is 300.
 
@@ -39,7 +40,7 @@ folder : Name or path of the folder where the training session will be saved.
 
 --VAE_warmup : Activates VAE weight scheduling. Default is deactivated
 
---k1 : Reconstruction weight. Default is 0.1
+--k1 : MSE Reconstruction weight. Default is 0.1
 --k2 : KL divergence weight. Default is 0.1
 
 **Downsizing techniques**
